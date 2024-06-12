@@ -4211,7 +4211,7 @@ class SortedSetCommands(CommandsProtocol):
             pieces.append("WITHSCORES")
         return self.execute_command("ZDIFF", *pieces, keys=keys)
 
-    def zdiffstore(self, dest: KeyT, keys: KeysT) -> ResponseT:
+    def zdiffstore(self, dest: KeyT, keys: KeysT) -> ResponseT[int]:
         """
         Computes the difference between the first and all successive input
         sorted sets provided in ``keys`` and stores the result in ``dest``.
@@ -4221,7 +4221,7 @@ class SortedSetCommands(CommandsProtocol):
         pieces = [len(keys), *keys]
         return self.execute_command("ZDIFFSTORE", dest, *pieces)
 
-    def zincrby(self, name: KeyT, amount: float, value: EncodableT) -> ResponseT:
+    def zincrby(self, name: KeyT, amount: float, value: EncodableT) -> ResponseT[str]:
         """
         Increment the score of ``value`` in sorted set ``name`` by ``amount``
 
@@ -4231,7 +4231,7 @@ class SortedSetCommands(CommandsProtocol):
 
     def zinter(
         self, keys: KeysT, aggregate: Union[str, None] = None, withscores: bool = False
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Return the intersect of multiple sorted sets specified by ``keys``.
         With the ``aggregate`` option, it is possible to specify how the
@@ -4250,7 +4250,7 @@ class SortedSetCommands(CommandsProtocol):
         dest: KeyT,
         keys: Union[Sequence[KeyT], Mapping[AnyKeyT, float]],
         aggregate: Union[str, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Intersect multiple sorted sets specified by ``keys`` into a new
         sorted set, ``dest``. Scores in the destination will be aggregated
@@ -4266,7 +4266,7 @@ class SortedSetCommands(CommandsProtocol):
 
     def zintercard(
         self, numkeys: int, keys: List[str], limit: int = 0
-    ) -> Union[Awaitable[int], int]:
+    ) -> ResponseT[int]:
         """
         Return the cardinality of the intersect of multiple sorted sets
         specified by ``keys`.
@@ -4279,7 +4279,7 @@ class SortedSetCommands(CommandsProtocol):
         args = [numkeys, *keys, "LIMIT", limit]
         return self.execute_command("ZINTERCARD", *args, keys=keys)
 
-    def zlexcount(self, name, min, max):
+    def zlexcount(self, name, min, max) -> ResponseT[int]:
         """
         Return the number of items in the sorted set ``name`` between the
         lexicographical range ``min`` and ``max``.
@@ -4288,7 +4288,7 @@ class SortedSetCommands(CommandsProtocol):
         """
         return self.execute_command("ZLEXCOUNT", name, min, max, keys=[name])
 
-    def zpopmax(self, name: KeyT, count: Union[int, None] = None) -> ResponseT:
+    def zpopmax(self, name: KeyT, count: Union[int, None] = None) -> ResponseT[list]:
         """
         Remove and return up to ``count`` members with the highest scores
         from the sorted set ``name``.
@@ -4299,7 +4299,7 @@ class SortedSetCommands(CommandsProtocol):
         options = {"withscores": True}
         return self.execute_command("ZPOPMAX", name, *args, **options)
 
-    def zpopmin(self, name: KeyT, count: Union[int, None] = None) -> ResponseT:
+    def zpopmin(self, name: KeyT, count: Union[int, None] = None) -> ResponseT[list]:
         """
         Remove and return up to ``count`` members with the lowest scores
         from the sorted set ``name``.
@@ -4311,8 +4311,8 @@ class SortedSetCommands(CommandsProtocol):
         return self.execute_command("ZPOPMIN", name, *args, **options)
 
     def zrandmember(
-        self, key: KeyT, count: int = None, withscores: bool = False
-    ) -> ResponseT:
+        self, key: KeyT, count: Optional[int] = None, withscores: bool = False
+    ) -> ResponseT[Union[None, str, list]]:
         """
         Return a random element from the sorted set value stored at key.
 
