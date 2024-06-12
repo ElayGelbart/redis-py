@@ -1,11 +1,13 @@
 # from __future__ import annotations
 
+from curses import OK
 from datetime import datetime, timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
     Awaitable,
     Iterable,
+    Literal,
     Mapping,
     Protocol,
     Type,
@@ -32,7 +34,10 @@ KeyT = _StringLikeT  # Main redis key space
 PatternT = _StringLikeT  # Patterns matched against keys, fields etc
 FieldT = EncodableT  # Fields within hash tables, streams and geo commands
 KeysT = Union[KeyT, Iterable[KeyT]]
-ResponseT = Union[Awaitable[Any], Any]
+OldResponseT = Union[Awaitable[Any], Any]  # Deprecated
+AnyResponseT = TypeVar("AnyResponseT", bound=Any)
+ResponseT = Union[AnyResponseT, Awaitable[AnyResponseT]]
+OKT = Literal["OK"]
 ChannelT = _StringLikeT
 GroupT = _StringLikeT  # Consumer group
 ConsumerT = _StringLikeT  # Consumer name
@@ -54,7 +59,7 @@ ExceptionMappingT = Mapping[str, Union[Type[Exception], Mapping[str, Type[Except
 class CommandsProtocol(Protocol):
     connection_pool: Union["AsyncConnectionPool", "ConnectionPool"]
 
-    def execute_command(self, *args, **options): ...
+    def execute_command(self, *args, **options) -> ResponseT[Any]: ...
 
 
 class ClusterCommandsProtocol(CommandsProtocol, Protocol):

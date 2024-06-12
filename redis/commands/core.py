@@ -23,6 +23,7 @@ from typing import (
 
 from redis.exceptions import ConnectionError, DataError, NoScriptError, RedisError
 from redis.typing import (
+    OKT,
     AbsExpiryT,
     AnyKeyT,
     BitfieldOffsetT,
@@ -56,7 +57,9 @@ class ACLCommands(CommandsProtocol):
     see: https://redis.io/topics/acl
     """
 
-    def acl_cat(self, category: Union[str, None] = None, **kwargs) -> ResponseT:
+    def acl_cat(
+        self, category: Union[str, None] = None, **kwargs
+    ) -> ResponseT[list[str]]:
         """
         Returns a list of categories or commands within a category.
 
@@ -69,7 +72,7 @@ class ACLCommands(CommandsProtocol):
         pieces: list[EncodableT] = [category] if category else []
         return self.execute_command("ACL CAT", *pieces, **kwargs)
 
-    def acl_dryrun(self, username, *args, **kwargs):
+    def acl_dryrun(self, username, *args, **kwargs) -> ResponseT[Union[OKT, str]]:
         """
         Simulate the execution of a given command by a given ``username``.
 
@@ -77,7 +80,7 @@ class ACLCommands(CommandsProtocol):
         """
         return self.execute_command("ACL DRYRUN", username, *args, **kwargs)
 
-    def acl_deluser(self, *username: str, **kwargs) -> ResponseT:
+    def acl_deluser(self, *username: str, **kwargs) -> ResponseT[int]:
         """
         Delete the ACL for the specified ``username``s
 
@@ -85,7 +88,7 @@ class ACLCommands(CommandsProtocol):
         """
         return self.execute_command("ACL DELUSER", *username, **kwargs)
 
-    def acl_genpass(self, bits: Union[int, None] = None, **kwargs) -> ResponseT:
+    def acl_genpass(self, bits: Union[int, None] = None, **kwargs) -> ResponseT[str]:
         """Generate a random password value.
         If ``bits`` is supplied then use this number of bits, rounded to
         the next multiple of 4.
@@ -104,7 +107,7 @@ class ACLCommands(CommandsProtocol):
                 )
         return self.execute_command("ACL GENPASS", *pieces, **kwargs)
 
-    def acl_getuser(self, username: str, **kwargs) -> ResponseT:
+    def acl_getuser(self, username: str, **kwargs) -> ResponseT[list]:
         """
         Get the ACL details for the specified ``username``.
 
@@ -114,7 +117,7 @@ class ACLCommands(CommandsProtocol):
         """
         return self.execute_command("ACL GETUSER", username, **kwargs)
 
-    def acl_help(self, **kwargs) -> ResponseT:
+    def acl_help(self, **kwargs) -> ResponseT[list]:
         """The ACL HELP command returns helpful text describing
         the different subcommands.
 
@@ -122,7 +125,7 @@ class ACLCommands(CommandsProtocol):
         """
         return self.execute_command("ACL HELP", **kwargs)
 
-    def acl_list(self, **kwargs) -> ResponseT:
+    def acl_list(self, **kwargs) -> ResponseT[list[str]]:
         """
         Return a list of all ACLs on the server
 
@@ -130,7 +133,7 @@ class ACLCommands(CommandsProtocol):
         """
         return self.execute_command("ACL LIST", **kwargs)
 
-    def acl_log(self, count: Union[int, None] = None, **kwargs) -> ResponseT:
+    def acl_log(self, count: Union[int, None] = None, **kwargs) -> ResponseT[list[str]]:
         """
         Get ACL logs as a list.
         :param int count: Get logs[0:count].
@@ -146,7 +149,7 @@ class ACLCommands(CommandsProtocol):
 
         return self.execute_command("ACL LOG", *args, **kwargs)
 
-    def acl_log_reset(self, **kwargs) -> ResponseT:
+    def acl_log_reset(self, **kwargs) -> ResponseT[OKT]:
         """
         Reset ACL logs.
         :rtype: Boolean.
@@ -156,7 +159,7 @@ class ACLCommands(CommandsProtocol):
         args = [b"RESET"]
         return self.execute_command("ACL LOG", *args, **kwargs)
 
-    def acl_load(self, **kwargs) -> ResponseT:
+    def acl_load(self, **kwargs) -> ResponseT[OKT]:
         """
         Load ACL rules from the configured ``aclfile``.
 
@@ -167,7 +170,7 @@ class ACLCommands(CommandsProtocol):
         """
         return self.execute_command("ACL LOAD", **kwargs)
 
-    def acl_save(self, **kwargs) -> ResponseT:
+    def acl_save(self, **kwargs) -> ResponseT[OKT]:
         """
         Save ACL rules to the configured ``aclfile``.
 
@@ -195,7 +198,7 @@ class ACLCommands(CommandsProtocol):
         reset_channels: bool = False,
         reset_passwords: bool = False,
         **kwargs,
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """
         Create or update an ACL user.
 
@@ -391,7 +394,9 @@ class ManagementCommands(CommandsProtocol):
     Redis management commands
     """
 
-    def auth(self, password: str, username: Optional[str] = None, **kwargs):
+    def auth(
+        self, password: str, username: Optional[str] = None, **kwargs
+    ) -> ResponseT[OKT]:
         """
         Authenticates the user. If you do not pass username, Redis will try to
         authenticate for the "default" user. If you do pass username, it will
@@ -404,14 +409,14 @@ class ManagementCommands(CommandsProtocol):
         pieces.append(password)
         return self.execute_command("AUTH", *pieces, **kwargs)
 
-    def bgrewriteaof(self, **kwargs):
+    def bgrewriteaof(self, **kwargs) -> ResponseT[str]:
         """Tell the Redis server to rewrite the AOF file from data in memory.
 
         For more information see https://redis.io/commands/bgrewriteaof
         """
         return self.execute_command("BGREWRITEAOF", **kwargs)
 
-    def bgsave(self, schedule: bool = True, **kwargs) -> ResponseT:
+    def bgsave(self, schedule: bool = True, **kwargs) -> ResponseT[str]:
         """
         Tell the Redis server to save its data to disk.  Unlike save(),
         this method is asynchronous and returns immediately.
@@ -423,7 +428,7 @@ class ManagementCommands(CommandsProtocol):
             pieces.append("SCHEDULE")
         return self.execute_command("BGSAVE", *pieces, **kwargs)
 
-    def role(self) -> ResponseT:
+    def role(self) -> ResponseT[list]:
         """
         Provide information on the role of a Redis instance in
         the context of replication, by returning if the instance
@@ -450,7 +455,7 @@ class ManagementCommands(CommandsProtocol):
         user: str = None,
         maxage: Union[int, None] = None,
         **kwargs,
-    ) -> ResponseT:
+    ) -> ResponseT[Union[OKT, int]]:
         """
         Disconnects client(s) using a variety of filter options
         :param _id: Kills a client by its unique ID field
@@ -494,7 +499,7 @@ class ManagementCommands(CommandsProtocol):
             )
         return self.execute_command("CLIENT KILL", *args, **kwargs)
 
-    def client_info(self, **kwargs) -> ResponseT:
+    def client_info(self, **kwargs) -> ResponseT[str]:
         """
         Returns information and statistics about the current
         client connection.
@@ -505,7 +510,7 @@ class ManagementCommands(CommandsProtocol):
 
     def client_list(
         self, _type: Union[str, None] = None, client_id: List[EncodableT] = [], **kwargs
-    ) -> ResponseT:
+    ) -> ResponseT[str]:
         """
         Returns a list of currently connected clients.
         If type of client specified, only that type will be returned.
@@ -530,7 +535,7 @@ class ManagementCommands(CommandsProtocol):
             args.append(" ".join(client_id))
         return self.execute_command("CLIENT LIST", *args, **kwargs)
 
-    def client_getname(self, **kwargs) -> ResponseT:
+    def client_getname(self, **kwargs) -> ResponseT[Optional[str]]:
         """
         Returns the current connection name
 
@@ -538,7 +543,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("CLIENT GETNAME", **kwargs)
 
-    def client_getredir(self, **kwargs) -> ResponseT:
+    def client_getredir(self, **kwargs) -> ResponseT[int]:
         """
         Returns the ID (an integer) of the client to whom we are
         redirecting tracking notifications.
@@ -549,7 +554,7 @@ class ManagementCommands(CommandsProtocol):
 
     def client_reply(
         self, reply: Union[Literal["ON"], Literal["OFF"], Literal["SKIP"]], **kwargs
-    ) -> ResponseT:
+    ) -> ResponseT[str]:
         """
         Enable and disable redis server replies.
 
@@ -571,7 +576,7 @@ class ManagementCommands(CommandsProtocol):
             raise DataError(f"CLIENT REPLY must be one of {replies!r}")
         return self.execute_command("CLIENT REPLY", reply, **kwargs)
 
-    def client_id(self, **kwargs) -> ResponseT:
+    def client_id(self, **kwargs) -> ResponseT[int]:
         """
         Returns the current connection id
 
@@ -587,7 +592,7 @@ class ManagementCommands(CommandsProtocol):
         optin: bool = False,
         optout: bool = False,
         noloop: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """
         Turn on the tracking mode.
         For more information about the options look at client_tracking func.
@@ -606,7 +611,7 @@ class ManagementCommands(CommandsProtocol):
         optin: bool = False,
         optout: bool = False,
         noloop: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """
         Turn off the tracking mode.
         For more information about the options look at client_tracking func.
@@ -627,7 +632,7 @@ class ManagementCommands(CommandsProtocol):
         optout: bool = False,
         noloop: bool = False,
         **kwargs,
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """
         Enables the tracking feature of the Redis server, that is used
         for server assisted client side caching.
@@ -677,7 +682,7 @@ class ManagementCommands(CommandsProtocol):
 
         return self.execute_command("CLIENT TRACKING", *pieces)
 
-    def client_trackinginfo(self, **kwargs) -> ResponseT:
+    def client_trackinginfo(self, **kwargs) -> ResponseT[list]:
         """
         Returns the information about the current client connection's
         use of the server assisted client side cache.
@@ -686,7 +691,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("CLIENT TRACKINGINFO", **kwargs)
 
-    def client_setname(self, name: str, **kwargs) -> ResponseT:
+    def client_setname(self, name: str, **kwargs) -> ResponseT[OKT]:
         """
         Sets the current connection name
 
@@ -700,7 +705,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("CLIENT SETNAME", name, **kwargs)
 
-    def client_setinfo(self, attr: str, value: str, **kwargs) -> ResponseT:
+    def client_setinfo(self, attr: str, value: str, **kwargs) -> ResponseT[OKT]:
         """
         Sets the current connection library name or version
         For mor information see https://redis.io/commands/client-setinfo
@@ -709,7 +714,7 @@ class ManagementCommands(CommandsProtocol):
 
     def client_unblock(
         self, client_id: int, error: bool = False, **kwargs
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Unblocks a connection by its client id.
         If ``error`` is True, unblocks the client with a special error message.
@@ -723,7 +728,7 @@ class ManagementCommands(CommandsProtocol):
             args.append(b"ERROR")
         return self.execute_command(*args, **kwargs)
 
-    def client_pause(self, timeout: int, all: bool = True, **kwargs) -> ResponseT:
+    def client_pause(self, timeout: int, all: bool = True, **kwargs) -> ResponseT[OKT]:
         """
         Suspend all the Redis clients for the specified amount of time.
 
@@ -748,7 +753,7 @@ class ManagementCommands(CommandsProtocol):
             args.append("WRITE")
         return self.execute_command(*args, **kwargs)
 
-    def client_unpause(self, **kwargs) -> ResponseT:
+    def client_unpause(self, **kwargs) -> ResponseT[OKT]:
         """
         Unpause all redis clients
 
@@ -756,7 +761,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("CLIENT UNPAUSE", **kwargs)
 
-    def client_no_evict(self, mode: str) -> Union[Awaitable[str], str]:
+    def client_no_evict(self, mode: str) -> ResponseT[OKT]:
         """
         Sets the client eviction mode for the current connection.
 
@@ -764,7 +769,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("CLIENT NO-EVICT", mode)
 
-    def client_no_touch(self, mode: str) -> Union[Awaitable[str], str]:
+    def client_no_touch(self, mode: str) -> ResponseT[OKT]:
         """
         # The command controls whether commands sent by the client will alter
         # the LRU/LFU of the keys they access.
@@ -775,7 +780,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("CLIENT NO-TOUCH", mode)
 
-    def command(self, **kwargs):
+    def command(self, **kwargs) -> ResponseT[list]:
         """
         Returns dict reply of details about all Redis commands.
 
@@ -788,7 +793,7 @@ class ManagementCommands(CommandsProtocol):
             "COMMAND INFO is intentionally not implemented in the client."
         )
 
-    def command_count(self, **kwargs) -> ResponseT:
+    def command_count(self, **kwargs) -> ResponseT[int]:
         return self.execute_command("COMMAND COUNT", **kwargs)
 
     def command_list(
@@ -796,7 +801,7 @@ class ManagementCommands(CommandsProtocol):
         module: Optional[str] = None,
         category: Optional[str] = None,
         pattern: Optional[str] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[list[str]]:
         """
         Return an array of the server's command names.
         You can use one of the following filters:
@@ -819,7 +824,9 @@ class ManagementCommands(CommandsProtocol):
 
         return self.execute_command("COMMAND LIST", *pieces)
 
-    def command_getkeysandflags(self, *args: List[str]) -> List[Union[str, List[str]]]:
+    def command_getkeysandflags(
+        self, *args: List[str]
+    ) -> ResponseT[List[Union[str, List[str]]]]:
         """
         Returns array of keys from a full Redis command and their usage flags.
 
@@ -827,7 +834,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("COMMAND GETKEYSANDFLAGS", *args)
 
-    def command_docs(self, *args):
+    def command_docs(self, *args) -> None:
         """
         This function throws a NotImplementedError since it is intentionally
         not supported.
@@ -838,7 +845,7 @@ class ManagementCommands(CommandsProtocol):
 
     def config_get(
         self, pattern: PatternT = "*", *args: List[PatternT], **kwargs
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Return a dictionary of configuration based on the ``pattern``
 
@@ -852,14 +859,14 @@ class ManagementCommands(CommandsProtocol):
         value: EncodableT,
         *args: List[Union[KeyT, EncodableT]],
         **kwargs,
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """Set config item ``name`` with ``value``
 
         For more information see https://redis.io/commands/config-set
         """
         return self.execute_command("CONFIG SET", name, value, *args, **kwargs)
 
-    def config_resetstat(self, **kwargs) -> ResponseT:
+    def config_resetstat(self, **kwargs) -> ResponseT[OKT]:
         """
         Reset runtime statistics
 
@@ -867,7 +874,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("CONFIG RESETSTAT", **kwargs)
 
-    def config_rewrite(self, **kwargs) -> ResponseT:
+    def config_rewrite(self, **kwargs) -> ResponseT[OKT]:
         """
         Rewrite config file with the minimal change to reflect running config.
 
@@ -875,7 +882,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("CONFIG REWRITE", **kwargs)
 
-    def dbsize(self, **kwargs) -> ResponseT:
+    def dbsize(self, **kwargs) -> ResponseT[int]:
         """
         Returns the number of keys in the current database
 
@@ -900,7 +907,7 @@ class ManagementCommands(CommandsProtocol):
             """
         )
 
-    def echo(self, value: EncodableT, **kwargs) -> ResponseT:
+    def echo(self, value: EncodableT, **kwargs) -> ResponseT[str]:
         """
         Echo the string back from the server
 
@@ -908,7 +915,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("ECHO", value, **kwargs)
 
-    def flushall(self, asynchronous: bool = False, **kwargs) -> ResponseT:
+    def flushall(self, asynchronous: bool = False, **kwargs) -> ResponseT[OKT]:
         """
         Delete all keys in all databases on the current host.
 
@@ -922,7 +929,7 @@ class ManagementCommands(CommandsProtocol):
             args.append(b"ASYNC")
         return self.execute_command("FLUSHALL", *args, **kwargs)
 
-    def flushdb(self, asynchronous: bool = False, **kwargs) -> ResponseT:
+    def flushdb(self, asynchronous: bool = False, **kwargs) -> ResponseT[OKT]:
         """
         Delete all keys in the current database.
 
@@ -948,7 +955,7 @@ class ManagementCommands(CommandsProtocol):
         options[NEVER_DECODE] = []
         return self.execute_command("SYNC", **options)
 
-    def psync(self, replicationid: str, offset: int):
+    def psync(self, replicationid: str, offset: int) -> ResponseT:
         """
         Initiates a replication stream from the master.
         Newer version for `sync`.
@@ -961,7 +968,7 @@ class ManagementCommands(CommandsProtocol):
         options[NEVER_DECODE] = []
         return self.execute_command("PSYNC", replicationid, offset, **options)
 
-    def swapdb(self, first: int, second: int, **kwargs) -> ResponseT:
+    def swapdb(self, first: int, second: int, **kwargs) -> ResponseT[OKT]:
         """
         Swap two databases
 
@@ -969,7 +976,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("SWAPDB", first, second, **kwargs)
 
-    def select(self, index: int, **kwargs) -> ResponseT:
+    def select(self, index: int, **kwargs) -> ResponseT[OKT]:
         """Select the Redis logical database at index.
 
         See: https://redis.io/commands/select
@@ -995,7 +1002,7 @@ class ManagementCommands(CommandsProtocol):
         else:
             return self.execute_command("INFO", section, *args, **kwargs)
 
-    def lastsave(self, **kwargs) -> ResponseT:
+    def lastsave(self, **kwargs) -> ResponseT[int]:
         """
         Return a Python datetime object representing the last time the
         Redis database was saved to disk
@@ -1004,7 +1011,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("LASTSAVE", **kwargs)
 
-    def latency_doctor(self):
+    def latency_doctor(self) -> None:
         """Raise a NotImplementedError, as the client will not support LATENCY DOCTOR.
         This funcion is best used within the redis-cli.
 
@@ -1018,7 +1025,7 @@ class ManagementCommands(CommandsProtocol):
             """
         )
 
-    def latency_graph(self):
+    def latency_graph(self) -> None:
         """Raise a NotImplementedError, as the client will not support LATENCY GRAPH.
         This funcion is best used within the redis-cli.
 
@@ -1032,7 +1039,7 @@ class ManagementCommands(CommandsProtocol):
             """
         )
 
-    def lolwut(self, *version_numbers: Union[str, float], **kwargs) -> ResponseT:
+    def lolwut(self, *version_numbers: Union[str, float], **kwargs) -> ResponseT[str]:
         """
         Get the Redis version and a piece of generative computer art
 
@@ -1043,7 +1050,7 @@ class ManagementCommands(CommandsProtocol):
         else:
             return self.execute_command("LOLWUT", **kwargs)
 
-    def reset(self) -> ResponseT:
+    def reset(self) -> ResponseT[str]:
         """Perform a full reset on the connection's server side contenxt.
 
         See: https://redis.io/commands/reset
@@ -1061,7 +1068,7 @@ class ManagementCommands(CommandsProtocol):
         replace: bool = False,
         auth: Union[str, None] = None,
         **kwargs,
-    ) -> ResponseT:
+    ) -> ResponseT[str]:
         """
         Migrate 1 or more keys from the current Redis server to a different
         server specified by the ``host``, ``port`` and ``destination_db``.
@@ -1124,7 +1131,7 @@ class ManagementCommands(CommandsProtocol):
             """
         )
 
-    def memory_stats(self, **kwargs) -> ResponseT:
+    def memory_stats(self, **kwargs) -> ResponseT[list]:
         """
         Return a dictionary of memory stats
 
@@ -1132,7 +1139,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("MEMORY STATS", **kwargs)
 
-    def memory_malloc_stats(self, **kwargs) -> ResponseT:
+    def memory_malloc_stats(self, **kwargs) -> ResponseT[str]:
         """
         Return an internal statistics report from the memory allocator.
 
@@ -1142,7 +1149,7 @@ class ManagementCommands(CommandsProtocol):
 
     def memory_usage(
         self, key: KeyT, samples: Union[int, None] = None, **kwargs
-    ) -> ResponseT:
+    ) -> ResponseT[Optional[int]]:
         """
         Return the total memory usage for key, its value and associated
         administrative overheads.
@@ -1158,7 +1165,7 @@ class ManagementCommands(CommandsProtocol):
             args.extend([b"SAMPLES", samples])
         return self.execute_command("MEMORY USAGE", key, *args, **kwargs)
 
-    def memory_purge(self, **kwargs) -> ResponseT:
+    def memory_purge(self, **kwargs) -> ResponseT[OKT]:
         """
         Attempts to purge dirty pages for reclamation by allocator
 
@@ -1166,7 +1173,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("MEMORY PURGE", **kwargs)
 
-    def latency_histogram(self, *args):
+    def latency_histogram(self, *args) -> None:
         """
         This function throws a NotImplementedError since it is intentionally
         not supported.
@@ -1175,7 +1182,7 @@ class ManagementCommands(CommandsProtocol):
             "LATENCY HISTOGRAM is intentionally not implemented in the client."
         )
 
-    def latency_history(self, event: str) -> ResponseT:
+    def latency_history(self, event: str) -> ResponseT[list]:
         """
         Returns the raw data of the ``event``'s latency spikes time series.
 
