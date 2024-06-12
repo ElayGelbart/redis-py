@@ -26,6 +26,7 @@ from redis.typing import (
     OKT,
     AbsExpiryT,
     AnyKeyT,
+    BinaryIntT,
     BitfieldOffsetT,
     ChannelT,
     CommandsProtocol,
@@ -1190,7 +1191,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("LATENCY HISTORY", event)
 
-    def latency_latest(self) -> ResponseT:
+    def latency_latest(self) -> ResponseT[list]:
         """
         Reports the latest latency events logged.
 
@@ -1198,7 +1199,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("LATENCY LATEST")
 
-    def latency_reset(self, *events: str) -> ResponseT:
+    def latency_reset(self, *events: str) -> ResponseT[int]:
         """
         Resets the latency spikes time series of all, or only some, events.
 
@@ -1206,7 +1207,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("LATENCY RESET", *events)
 
-    def ping(self, **kwargs) -> ResponseT:
+    def ping(self, **kwargs) -> ResponseT[str]:
         """
         Ping the Redis server
 
@@ -1214,7 +1215,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("PING", **kwargs)
 
-    def quit(self, **kwargs) -> ResponseT:
+    def quit(self, **kwargs) -> ResponseT[OKT]:
         """
         Ask the server to close the connection.
 
@@ -1222,7 +1223,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("QUIT", **kwargs)
 
-    def replicaof(self, *args, **kwargs) -> ResponseT:
+    def replicaof(self, *args, **kwargs) -> ResponseT[OKT]:
         """
         Update the replication settings of a redis replica, on the fly.
 
@@ -1235,7 +1236,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("REPLICAOF", *args, **kwargs)
 
-    def save(self, **kwargs) -> ResponseT:
+    def save(self, **kwargs) -> ResponseT[OKT]:
         """
         Tell the Redis server to save its data to disk,
         blocking until the save is complete
@@ -1288,7 +1289,7 @@ class ManagementCommands(CommandsProtocol):
 
     def slaveof(
         self, host: Union[str, None] = None, port: Union[int, None] = None, **kwargs
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """
         Set the server to be a replicated slave of the instance identified
         by the ``host`` and ``port``. If called without arguments, the
@@ -1300,7 +1301,7 @@ class ManagementCommands(CommandsProtocol):
             return self.execute_command("SLAVEOF", b"NO", b"ONE", **kwargs)
         return self.execute_command("SLAVEOF", host, port, **kwargs)
 
-    def slowlog_get(self, num: Union[int, None] = None, **kwargs) -> ResponseT:
+    def slowlog_get(self, num: Union[int, None] = None, **kwargs) -> ResponseT[list]:
         """
         Get the entries from the slowlog. If ``num`` is specified, get the
         most recent ``num`` items.
@@ -1317,7 +1318,7 @@ class ManagementCommands(CommandsProtocol):
             kwargs[NEVER_DECODE] = []
         return self.execute_command(*args, **kwargs)
 
-    def slowlog_len(self, **kwargs) -> ResponseT:
+    def slowlog_len(self, **kwargs) -> ResponseT[int]:
         """
         Get the number of items in the slowlog
 
@@ -1325,7 +1326,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("SLOWLOG LEN", **kwargs)
 
-    def slowlog_reset(self, **kwargs) -> ResponseT:
+    def slowlog_reset(self, **kwargs) -> ResponseT[OKT]:
         """
         Remove all items in the slowlog
 
@@ -1333,7 +1334,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("SLOWLOG RESET", **kwargs)
 
-    def time(self, **kwargs) -> ResponseT:
+    def time(self, **kwargs) -> ResponseT[list[int]]:
         """
         Returns the server time as a 2-item tuple of ints:
         (seconds since epoch, microseconds into this second).
@@ -1342,7 +1343,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command("TIME", **kwargs)
 
-    def wait(self, num_replicas: int, timeout: int, **kwargs) -> ResponseT:
+    def wait(self, num_replicas: int, timeout: int, **kwargs) -> ResponseT[int]:
         """
         Redis synchronous replication
         That returns the number of replicas that processed the query when
@@ -1355,7 +1356,7 @@ class ManagementCommands(CommandsProtocol):
 
     def waitaof(
         self, num_local: int, num_replicas: int, timeout: int, **kwargs
-    ) -> ResponseT:
+    ) -> ResponseT[list[int]]:
         """
         This command blocks the current client until all previous write
         commands by that client are acknowledged as having been fsynced
@@ -1368,7 +1369,7 @@ class ManagementCommands(CommandsProtocol):
             "WAITAOF", num_local, num_replicas, timeout, **kwargs
         )
 
-    def hello(self):
+    def hello(self) -> None:
         """
         This function throws a NotImplementedError since it is intentionally
         not supported.
@@ -1377,7 +1378,7 @@ class ManagementCommands(CommandsProtocol):
             "HELLO is intentionally not implemented in the client."
         )
 
-    def failover(self):
+    def failover(self) -> None:
         """
         This function throws a NotImplementedError since it is intentionally
         not supported.
@@ -1541,7 +1542,7 @@ class BitFieldOperation:
             cmd.extend(ops)
         return cmd
 
-    def execute(self) -> ResponseT:
+    def execute(self) -> ResponseT[list]:
         """
         Execute the operation(s) in a single BITFIELD command. The return value
         is a list of values corresponding to each operation. If the client
@@ -1558,7 +1559,7 @@ class BasicKeyCommands(CommandsProtocol):
     Redis basic key-based commands
     """
 
-    def append(self, key: KeyT, value: EncodableT) -> ResponseT:
+    def append(self, key: KeyT, value: EncodableT) -> ResponseT[int]:
         """
         Appends the string ``value`` to the value at ``key``. If ``key``
         doesn't already exist, create it with a value of ``value``.
@@ -1574,7 +1575,7 @@ class BasicKeyCommands(CommandsProtocol):
         start: Union[int, None] = None,
         end: Union[int, None] = None,
         mode: Optional[str] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Returns the count of set bits in the value of ``key``.  Optional
         ``start`` and ``end`` parameters indicate which bytes to consider
@@ -1610,7 +1611,7 @@ class BasicKeyCommands(CommandsProtocol):
         encoding: str,
         offset: BitfieldOffsetT,
         items: Optional[list] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Return an array of the specified bitfield values
         where the first value is found using ``encoding`` and ``offset``
@@ -1627,7 +1628,7 @@ class BasicKeyCommands(CommandsProtocol):
             params.extend(["GET", encoding, offset])
         return self.execute_command("BITFIELD_RO", *params, keys=[key])
 
-    def bitop(self, operation: str, dest: KeyT, *keys: KeyT) -> ResponseT:
+    def bitop(self, operation: str, dest: KeyT, *keys: KeyT) -> ResponseT[int]:
         """
         Perform a bitwise operation using ``operation`` between ``keys`` and
         store the result in ``dest``.
@@ -1643,7 +1644,7 @@ class BasicKeyCommands(CommandsProtocol):
         start: Union[int, None] = None,
         end: Union[int, None] = None,
         mode: Optional[str] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Return the position of the first bit set to 1 or 0 in a string.
         ``start`` and ``end`` defines search range. The range is interpreted
@@ -1673,7 +1674,7 @@ class BasicKeyCommands(CommandsProtocol):
         destination: str,
         destination_db: Union[str, None] = None,
         replace: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Copy the value stored in the ``source`` key to the ``destination`` key.
 
@@ -1693,7 +1694,7 @@ class BasicKeyCommands(CommandsProtocol):
             params.append("REPLACE")
         return self.execute_command("COPY", *params)
 
-    def decrby(self, name: KeyT, amount: int = 1) -> ResponseT:
+    def decrby(self, name: KeyT, amount: int = 1) -> ResponseT[int]:
         """
         Decrements the value of ``key`` by ``amount``.  If no key exists,
         the value will be initialized as 0 - ``amount``
@@ -1704,16 +1705,16 @@ class BasicKeyCommands(CommandsProtocol):
 
     decr = decrby
 
-    def delete(self, *names: KeyT) -> ResponseT:
+    def delete(self, *names: KeyT) -> ResponseT[int]:
         """
         Delete one or more keys specified by ``names``
         """
         return self.execute_command("DEL", *names)
 
-    def __delitem__(self, name: KeyT):
+    def __delitem__(self, name: KeyT) -> ResponseT[int]:
         self.delete(name)
 
-    def dump(self, name: KeyT) -> ResponseT:
+    def dump(self, name: KeyT) -> ResponseT[Optional[str]]:
         """
         Return a serialized version of the value stored at the specified key.
         If key does not exist a nil bulk reply is returned.
@@ -1726,7 +1727,7 @@ class BasicKeyCommands(CommandsProtocol):
         options[NEVER_DECODE] = []
         return self.execute_command("DUMP", name, **options)
 
-    def exists(self, *names: KeyT) -> ResponseT:
+    def exists(self, *names: KeyT) -> ResponseT[int]:
         """
         Returns the number of ``names`` that exist
 
@@ -1744,7 +1745,7 @@ class BasicKeyCommands(CommandsProtocol):
         xx: bool = False,
         gt: bool = False,
         lt: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Set an expire flag on key ``name`` for ``time`` seconds with given
         ``option``. ``time`` can be represented by an integer or a Python timedelta
@@ -1781,7 +1782,7 @@ class BasicKeyCommands(CommandsProtocol):
         xx: bool = False,
         gt: bool = False,
         lt: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Set an expire flag on key ``name`` with given ``option``. ``when``
         can be represented as an integer indicating unix time or a Python
@@ -1810,7 +1811,7 @@ class BasicKeyCommands(CommandsProtocol):
 
         return self.execute_command("EXPIREAT", name, when, *exp_option)
 
-    def expiretime(self, key: str) -> int:
+    def expiretime(self, key: str) -> ResponseT[int]:
         """
         Returns the absolute Unix timestamp (since January 1, 1970) in seconds
         at which the given key will expire.
@@ -1819,7 +1820,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("EXPIRETIME", key)
 
-    def get(self, name: KeyT) -> ResponseT:
+    def get(self, name: KeyT) -> ResponseT[Optional[str]]:
         """
         Return the value at key ``name``, or None if the key doesn't exist
 
@@ -1827,7 +1828,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("GET", name, keys=[name])
 
-    def getdel(self, name: KeyT) -> ResponseT:
+    def getdel(self, name: KeyT) -> ResponseT[Optional[str]]:
         """
         Get the value at key ``name`` and delete the key. This command
         is similar to GET, except for the fact that it also deletes
@@ -1846,7 +1847,7 @@ class BasicKeyCommands(CommandsProtocol):
         exat: Union[AbsExpiryT, None] = None,
         pxat: Union[AbsExpiryT, None] = None,
         persist: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[Optional[str]]:
         """
         Get the value of key and optionally set its expiration.
         GETEX is similar to GET, but is a write command with
@@ -1903,7 +1904,7 @@ class BasicKeyCommands(CommandsProtocol):
 
         return self.execute_command("GETEX", name, *pieces)
 
-    def __getitem__(self, name: KeyT):
+    def __getitem__(self, name: KeyT) -> ResponseT[Optional[str]]:
         """
         Return the value at key ``name``, raises a KeyError if the key
         doesn't exist.
@@ -1913,7 +1914,7 @@ class BasicKeyCommands(CommandsProtocol):
             return value
         raise KeyError(name)
 
-    def getbit(self, name: KeyT, offset: int) -> ResponseT:
+    def getbit(self, name: KeyT, offset: int) -> ResponseT[int]:
         """
         Returns an integer indicating the value of ``offset`` in ``name``
 
@@ -1921,7 +1922,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("GETBIT", name, offset, keys=[name])
 
-    def getrange(self, key: KeyT, start: int, end: int) -> ResponseT:
+    def getrange(self, key: KeyT, start: int, end: int) -> ResponseT[str]:
         """
         Returns the substring of the string value stored at ``key``,
         determined by the offsets ``start`` and ``end`` (both are inclusive)
@@ -1930,7 +1931,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("GETRANGE", key, start, end, keys=[key])
 
-    def getset(self, name: KeyT, value: EncodableT) -> ResponseT:
+    def getset(self, name: KeyT, value: EncodableT) -> ResponseT[Optional[str]]:
         """
         Sets the value at key ``name`` to ``value``
         and returns the old value at key ``name`` atomically.
@@ -1942,7 +1943,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("GETSET", name, value)
 
-    def incrby(self, name: KeyT, amount: int = 1) -> ResponseT:
+    def incrby(self, name: KeyT, amount: int = 1) -> ResponseT[int]:
         """
         Increments the value of ``key`` by ``amount``.  If no key exists,
         the value will be initialized as ``amount``
@@ -1953,7 +1954,7 @@ class BasicKeyCommands(CommandsProtocol):
 
     incr = incrby
 
-    def incrbyfloat(self, name: KeyT, amount: float = 1.0) -> ResponseT:
+    def incrbyfloat(self, name: KeyT, amount: float = 1.0) -> ResponseT[str]:
         """
         Increments the value at key ``name`` by floating ``amount``.
         If no key exists, the value will be initialized as ``amount``
@@ -1962,7 +1963,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("INCRBYFLOAT", name, amount)
 
-    def keys(self, pattern: PatternT = "*", **kwargs) -> ResponseT:
+    def keys(self, pattern: PatternT = "*", **kwargs) -> ResponseT[list[str]]:
         """
         Returns a list of keys matching ``pattern``
 
@@ -1972,7 +1973,7 @@ class BasicKeyCommands(CommandsProtocol):
 
     def lmove(
         self, first_list: str, second_list: str, src: str = "LEFT", dest: str = "RIGHT"
-    ) -> ResponseT:
+    ) -> ResponseT[str]:
         """
         Atomically returns and removes the first/last element of a list,
         pushing it as the first/last element on the destination list.
@@ -1990,7 +1991,7 @@ class BasicKeyCommands(CommandsProtocol):
         timeout: int,
         src: str = "LEFT",
         dest: str = "RIGHT",
-    ) -> ResponseT:
+    ) -> ResponseT[Optional[str]]:
         """
         Blocking version of lmove.
 
@@ -1999,7 +2000,7 @@ class BasicKeyCommands(CommandsProtocol):
         params = [first_list, second_list, src, dest, timeout]
         return self.execute_command("BLMOVE", *params)
 
-    def mget(self, keys: KeysT, *args: EncodableT) -> ResponseT:
+    def mget(self, keys: KeysT, *args: EncodableT) -> ResponseT[list[Optional[str]]]:
         """
         Returns a list of values ordered identically to ``keys``
 
@@ -2014,7 +2015,7 @@ class BasicKeyCommands(CommandsProtocol):
         options["keys"] = args
         return self.execute_command("MGET", *args, **options)
 
-    def mset(self, mapping: Mapping[AnyKeyT, EncodableT]) -> ResponseT:
+    def mset(self, mapping: Mapping[AnyKeyT, EncodableT]) -> ResponseT[OKT]:
         """
         Sets key/values based on a mapping. Mapping is a dictionary of
         key/value pairs. Both keys and values should be strings or types that
@@ -2027,7 +2028,7 @@ class BasicKeyCommands(CommandsProtocol):
             items.extend(pair)
         return self.execute_command("MSET", *items)
 
-    def msetnx(self, mapping: Mapping[AnyKeyT, EncodableT]) -> ResponseT:
+    def msetnx(self, mapping: Mapping[AnyKeyT, EncodableT]) -> ResponseT[int]:
         """
         Sets key/values based on a mapping if none of the keys are already set.
         Mapping is a dictionary of key/value pairs. Both keys and values
@@ -2041,7 +2042,7 @@ class BasicKeyCommands(CommandsProtocol):
             items.extend(pair)
         return self.execute_command("MSETNX", *items)
 
-    def move(self, name: KeyT, db: int) -> ResponseT:
+    def move(self, name: KeyT, db: int) -> ResponseT[int]:
         """
         Moves the key ``name`` to a different Redis database ``db``
 
@@ -2049,7 +2050,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("MOVE", name, db)
 
-    def persist(self, name: KeyT) -> ResponseT:
+    def persist(self, name: KeyT) -> ResponseT[int]:
         """
         Removes an expiration on ``name``
 
@@ -2065,7 +2066,7 @@ class BasicKeyCommands(CommandsProtocol):
         xx: bool = False,
         gt: bool = False,
         lt: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Set an expire flag on key ``name`` for ``time`` milliseconds
         with given ``option``. ``time`` can be represented by an
@@ -2101,7 +2102,7 @@ class BasicKeyCommands(CommandsProtocol):
         xx: bool = False,
         gt: bool = False,
         lt: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Set an expire flag on key ``name`` with given ``option``. ``when``
         can be represented as an integer representing unix time in
@@ -2128,7 +2129,7 @@ class BasicKeyCommands(CommandsProtocol):
             exp_option.append("LT")
         return self.execute_command("PEXPIREAT", name, when, *exp_option)
 
-    def pexpiretime(self, key: str) -> int:
+    def pexpiretime(self, key: str) -> ResponseT[int]:
         """
         Returns the absolute Unix timestamp (since January 1, 1970) in milliseconds
         at which the given key will expire.
@@ -2137,7 +2138,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("PEXPIRETIME", key)
 
-    def psetex(self, name: KeyT, time_ms: ExpiryT, value: EncodableT):
+    def psetex(self, name: KeyT, time_ms: ExpiryT, value: EncodableT) -> ResponseT[OKT]:
         """
         Set the value of key ``name`` to ``value`` that expires in ``time_ms``
         milliseconds. ``time_ms`` can be represented by an integer or a Python
@@ -2149,7 +2150,7 @@ class BasicKeyCommands(CommandsProtocol):
             time_ms = int(time_ms.total_seconds() * 1000)
         return self.execute_command("PSETEX", name, time_ms, value)
 
-    def pttl(self, name: KeyT) -> ResponseT:
+    def pttl(self, name: KeyT) -> ResponseT[int]:
         """
         Returns the number of milliseconds until the key ``name`` will expire
 
@@ -2158,7 +2159,7 @@ class BasicKeyCommands(CommandsProtocol):
         return self.execute_command("PTTL", name)
 
     def hrandfield(
-        self, key: str, count: int = None, withvalues: bool = False
+        self, key: str, count: Optional[int] = None, withvalues: bool = False
     ) -> ResponseT:
         """
         Return a random field from the hash value stored at key.
@@ -2181,7 +2182,7 @@ class BasicKeyCommands(CommandsProtocol):
 
         return self.execute_command("HRANDFIELD", key, *params)
 
-    def randomkey(self, **kwargs) -> ResponseT:
+    def randomkey(self, **kwargs) -> ResponseT[Optional[str]]:
         """
         Returns the name of a random key
 
@@ -2189,7 +2190,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("RANDOMKEY", **kwargs)
 
-    def rename(self, src: KeyT, dst: KeyT) -> ResponseT:
+    def rename(self, src: KeyT, dst: KeyT) -> ResponseT[OKT]:
         """
         Rename key ``src`` to ``dst``
 
@@ -2197,7 +2198,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("RENAME", src, dst)
 
-    def renamenx(self, src: KeyT, dst: KeyT):
+    def renamenx(self, src: KeyT, dst: KeyT) -> ResponseT[int]:
         """
         Rename key ``src`` to ``dst`` if ``dst`` doesn't already exist
 
@@ -2214,7 +2215,7 @@ class BasicKeyCommands(CommandsProtocol):
         absttl: bool = False,
         idletime: Union[int, None] = None,
         frequency: Union[int, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """
         Create a key using the provided serialized value, previously obtained
         using DUMP.
@@ -2267,7 +2268,7 @@ class BasicKeyCommands(CommandsProtocol):
         get: bool = False,
         exat: Union[AbsExpiryT, None] = None,
         pxat: Union[AbsExpiryT, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[Union[str, OKT, None]]:
         """
         Set the value at key ``name`` to ``value``
 
@@ -2340,10 +2341,10 @@ class BasicKeyCommands(CommandsProtocol):
 
         return self.execute_command("SET", *pieces, **options)
 
-    def __setitem__(self, name: KeyT, value: EncodableT):
+    def __setitem__(self, name: KeyT, value: EncodableT) -> None:
         self.set(name, value)
 
-    def setbit(self, name: KeyT, offset: int, value: int) -> ResponseT:
+    def setbit(self, name: KeyT, offset: int, value: int) -> ResponseT[int]:
         """
         Flag the ``offset`` in ``name`` as ``value``. Returns an integer
         indicating the previous value of ``offset``.
@@ -2353,7 +2354,7 @@ class BasicKeyCommands(CommandsProtocol):
         value = value and 1 or 0
         return self.execute_command("SETBIT", name, offset, value)
 
-    def setex(self, name: KeyT, time: ExpiryT, value: EncodableT) -> ResponseT:
+    def setex(self, name: KeyT, time: ExpiryT, value: EncodableT) -> ResponseT[OKT]:
         """
         Set the value of key ``name`` to ``value`` that expires in ``time``
         seconds. ``time`` can be represented by an integer or a Python
@@ -2365,7 +2366,7 @@ class BasicKeyCommands(CommandsProtocol):
             time = int(time.total_seconds())
         return self.execute_command("SETEX", name, time, value)
 
-    def setnx(self, name: KeyT, value: EncodableT) -> ResponseT:
+    def setnx(self, name: KeyT, value: EncodableT) -> ResponseT[int]:
         """
         Set the value of key ``name`` to ``value`` if key doesn't exist
 
@@ -2373,7 +2374,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("SETNX", name, value)
 
-    def setrange(self, name: KeyT, offset: int, value: EncodableT) -> ResponseT:
+    def setrange(self, name: KeyT, offset: int, value: EncodableT) -> ResponseT[int]:
         """
         Overwrite bytes in the value of ``name`` starting at ``offset`` with
         ``value``. If ``offset`` plus the length of ``value`` exceeds the
@@ -2452,7 +2453,7 @@ class BasicKeyCommands(CommandsProtocol):
             **kwargs,
         )
 
-    def strlen(self, name: KeyT) -> ResponseT:
+    def strlen(self, name: KeyT) -> ResponseT[int]:
         """
         Return the number of bytes stored in the value of ``name``
 
@@ -2460,14 +2461,14 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("STRLEN", name, keys=[name])
 
-    def substr(self, name: KeyT, start: int, end: int = -1) -> ResponseT:
+    def substr(self, name: KeyT, start: int, end: int = -1) -> ResponseT[str]:
         """
         Return a substring of the string at key ``name``. ``start`` and ``end``
         are 0-based integers specifying the portion of the string to return.
         """
         return self.execute_command("SUBSTR", name, start, end, keys=[name])
 
-    def touch(self, *args: KeyT) -> ResponseT:
+    def touch(self, *args: KeyT) -> ResponseT[int]:
         """
         Alters the last access time of a key(s) ``*args``. A key is ignored
         if it does not exist.
@@ -2484,7 +2485,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command("TTL", name)
 
-    def type(self, name: KeyT) -> ResponseT:
+    def type(self, name: KeyT) -> ResponseT[str]:
         """
         Returns the type of key ``name``
 
@@ -2508,7 +2509,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         warnings.warn(DeprecationWarning("Call UNWATCH from a Pipeline object"))
 
-    def unlink(self, *names: KeyT) -> ResponseT:
+    def unlink(self, *names: KeyT) -> ResponseT[int]:
         """
         Unlink one or more keys specified by ``names``
 
@@ -2524,7 +2525,7 @@ class BasicKeyCommands(CommandsProtocol):
         idx: Optional[bool] = False,
         minmatchlen: Optional[int] = 0,
         withmatchlen: Optional[bool] = False,
-    ) -> Union[str, int, list]:
+    ) -> ResponseT[Union[str, int, list]]:
         """
         Find the longest common subsequence between ``key1`` and ``key2``.
         If ``len`` is true the length of the match will will be returned.
@@ -2574,7 +2575,7 @@ class ListCommands(CommandsProtocol):
 
     def blpop(
         self, keys: List, timeout: Optional[int] = 0
-    ) -> Union[Awaitable[list], list]:
+    ) -> ResponseT[Optional[list]]:
         """
         LPOP a value off of the first non-empty list
         named in the ``keys`` list.
@@ -2595,7 +2596,7 @@ class ListCommands(CommandsProtocol):
 
     def brpop(
         self, keys: List, timeout: Optional[int] = 0
-    ) -> Union[Awaitable[list], list]:
+    ) -> ResponseT[Optional[list]]:
         """
         RPOP a value off of the first non-empty list
         named in the ``keys`` list.
@@ -2616,7 +2617,7 @@ class ListCommands(CommandsProtocol):
 
     def brpoplpush(
         self, src: str, dst: str, timeout: Optional[int] = 0
-    ) -> Union[Awaitable[Optional[str]], Optional[str]]:
+    ) -> ResponseT[Optional[str]]:
         """
         Pop a value off the tail of ``src``, push it on the head of ``dst``
         and then return it.
@@ -2638,7 +2639,7 @@ class ListCommands(CommandsProtocol):
         *args: List[str],
         direction: str,
         count: Optional[int] = 1,
-    ) -> Optional[list]:
+    ) -> ResponseT[Optional[list]]:
         """
         Pop ``count`` values (default 1) from first non-empty in the list
         of provided key names.
@@ -2658,7 +2659,7 @@ class ListCommands(CommandsProtocol):
         *args: List[str],
         direction: str,
         count: Optional[int] = 1,
-    ) -> Union[Awaitable[list], list]:
+    ) -> ResponseT[Optional[list]]:
         """
         Pop ``count`` values (default 1) first non-empty list key from the list
         of args provided key names.
@@ -2671,9 +2672,7 @@ class ListCommands(CommandsProtocol):
 
         return self.execute_command("LMPOP", *args)
 
-    def lindex(
-        self, name: str, index: int
-    ) -> Union[Awaitable[Optional[str]], Optional[str]]:
+    def lindex(self, name: str, index: int) -> ResponseT[Optional[str]]:
         """
         Return the item from list ``name`` at position ``index``
 
@@ -2686,7 +2685,7 @@ class ListCommands(CommandsProtocol):
 
     def linsert(
         self, name: str, where: str, refvalue: str, value: str
-    ) -> Union[Awaitable[int], int]:
+    ) -> ResponseT[int]:
         """
         Insert ``value`` in list ``name`` either immediately before or after
         [``where``] ``refvalue``
@@ -2698,7 +2697,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command("LINSERT", name, where, refvalue, value)
 
-    def llen(self, name: str) -> Union[Awaitable[int], int]:
+    def llen(self, name: str) -> ResponseT[int]:
         """
         Return the length of the list ``name``
 
@@ -2710,7 +2709,7 @@ class ListCommands(CommandsProtocol):
         self,
         name: str,
         count: Optional[int] = None,
-    ) -> Union[Awaitable[Union[str, List, None]], Union[str, List, None]]:
+    ) -> ResponseT[Union[str, list, None]]:
         """
         Removes and returns the first elements of the list ``name``.
 
@@ -2725,7 +2724,7 @@ class ListCommands(CommandsProtocol):
         else:
             return self.execute_command("LPOP", name)
 
-    def lpush(self, name: str, *values: FieldT) -> Union[Awaitable[int], int]:
+    def lpush(self, name: str, *values: FieldT) -> ResponseT[int]:
         """
         Push ``values`` onto the head of the list ``name``
 
@@ -2733,7 +2732,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command("LPUSH", name, *values)
 
-    def lpushx(self, name: str, *values: FieldT) -> Union[Awaitable[int], int]:
+    def lpushx(self, name: str, *values: FieldT) -> ResponseT[int]:
         """
         Push ``value`` onto the head of the list ``name`` if ``name`` exists
 
@@ -2741,7 +2740,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command("LPUSHX", name, *values)
 
-    def lrange(self, name: str, start: int, end: int) -> Union[Awaitable[list], list]:
+    def lrange(self, name: str, start: int, end: int) -> ResponseT[list]:
         """
         Return a slice of the list ``name`` between
         position ``start`` and ``end``
@@ -2753,7 +2752,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command("LRANGE", name, start, end, keys=[name])
 
-    def lrem(self, name: str, count: int, value: str) -> Union[Awaitable[int], int]:
+    def lrem(self, name: str, count: int, value: str) -> ResponseT[int]:
         """
         Remove the first ``count`` occurrences of elements equal to ``value``
         from the list stored at ``name``.
@@ -2767,7 +2766,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command("LREM", name, count, value)
 
-    def lset(self, name: str, index: int, value: str) -> Union[Awaitable[str], str]:
+    def lset(self, name: str, index: int, value: str) -> ResponseT[OKT]:
         """
         Set element at ``index`` of list ``name`` to ``value``
 
@@ -2775,7 +2774,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command("LSET", name, index, value)
 
-    def ltrim(self, name: str, start: int, end: int) -> Union[Awaitable[str], str]:
+    def ltrim(self, name: str, start: int, end: int) -> ResponseT[OKT]:
         """
         Trim the list ``name``, removing all values not within the slice
         between ``start`` and ``end``
@@ -2791,7 +2790,7 @@ class ListCommands(CommandsProtocol):
         self,
         name: str,
         count: Optional[int] = None,
-    ) -> Union[Awaitable[Union[str, List, None]], Union[str, List, None]]:
+    ) -> ResponseT[Union[str, List, None]]:
         """
         Removes and returns the last elements of the list ``name``.
 
@@ -2806,7 +2805,7 @@ class ListCommands(CommandsProtocol):
         else:
             return self.execute_command("RPOP", name)
 
-    def rpoplpush(self, src: str, dst: str) -> Union[Awaitable[str], str]:
+    def rpoplpush(self, src: str, dst: str) -> ResponseT[str]:
         """
         RPOP a value off of the ``src`` list and atomically LPUSH it
         on to the ``dst`` list.  Returns the value.
@@ -2815,7 +2814,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command("RPOPLPUSH", src, dst)
 
-    def rpush(self, name: str, *values: FieldT) -> Union[Awaitable[int], int]:
+    def rpush(self, name: str, *values: FieldT) -> ResponseT[int]:
         """
         Push ``values`` onto the tail of the list ``name``
 
@@ -2823,7 +2822,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command("RPUSH", name, *values)
 
-    def rpushx(self, name: str, *values: str) -> Union[Awaitable[int], int]:
+    def rpushx(self, name: str, *values: str) -> ResponseT[int]:
         """
         Push ``value`` onto the tail of the list ``name`` if ``name`` exists
 
@@ -2838,7 +2837,7 @@ class ListCommands(CommandsProtocol):
         rank: Optional[int] = None,
         count: Optional[int] = None,
         maxlen: Optional[int] = None,
-    ) -> Union[str, List, None]:
+    ) -> ResponseT[Union[str, list, None]]:
         """
         Get position of ``value`` within the list ``name``
 
@@ -2887,7 +2886,7 @@ class ListCommands(CommandsProtocol):
         alpha: bool = False,
         store: Optional[str] = None,
         groups: Optional[bool] = False,
-    ) -> Union[List, int]:
+    ) -> ResponseT[Union[list, int]]:
         """
         Sort and return the list, set or sorted set at ``name``.
 
@@ -2958,7 +2957,7 @@ class ListCommands(CommandsProtocol):
         get: Optional[List[str]] = None,
         desc: bool = False,
         alpha: bool = False,
-    ) -> list:
+    ) -> ResponseT[list]:
         """
         Returns the elements contained in the list, set or sorted set at key.
         (read-only variant of the SORT command)
@@ -2999,7 +2998,7 @@ class ScanCommands(CommandsProtocol):
         count: Union[int, None] = None,
         _type: Union[str, None] = None,
         **kwargs,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Incrementally return lists of key names. Also return a cursor
         indicating the scan position.
@@ -3059,7 +3058,7 @@ class ScanCommands(CommandsProtocol):
         cursor: int = 0,
         match: Union[PatternT, None] = None,
         count: Union[int, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Incrementally return lists of elements in a set. Also return a cursor
         indicating the scan position.
@@ -3103,7 +3102,7 @@ class ScanCommands(CommandsProtocol):
         match: Union[PatternT, None] = None,
         count: Union[int, None] = None,
         no_values: Union[bool, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Incrementally return key/value slices in a hash. Also return a cursor
         indicating the scan position.
@@ -3159,7 +3158,7 @@ class ScanCommands(CommandsProtocol):
         match: Union[PatternT, None] = None,
         count: Union[int, None] = None,
         score_cast_func: Union[type, Callable] = float,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Incrementally return lists of elements in a sorted set. Also return a
         cursor indicating the scan position.
@@ -3326,7 +3325,7 @@ class SetCommands(CommandsProtocol):
     see: https://redis.io/topics/data-types#sets
     """
 
-    def sadd(self, name: str, *values: FieldT) -> Union[Awaitable[int], int]:
+    def sadd(self, name: str, *values: FieldT) -> ResponseT[int]:
         """
         Add ``value(s)`` to set ``name``
 
@@ -3334,7 +3333,7 @@ class SetCommands(CommandsProtocol):
         """
         return self.execute_command("SADD", name, *values)
 
-    def scard(self, name: str) -> Union[Awaitable[int], int]:
+    def scard(self, name: str) -> ResponseT[int]:
         """
         Return the number of elements in set ``name``
 
@@ -3342,7 +3341,7 @@ class SetCommands(CommandsProtocol):
         """
         return self.execute_command("SCARD", name, keys=[name])
 
-    def sdiff(self, keys: List, *args: List) -> Union[Awaitable[list], list]:
+    def sdiff(self, keys: List, *args: List) -> ResponseT[list]:
         """
         Return the difference of sets specified by ``keys``
 
@@ -3351,9 +3350,7 @@ class SetCommands(CommandsProtocol):
         args = list_or_args(keys, args)
         return self.execute_command("SDIFF", *args, keys=args)
 
-    def sdiffstore(
-        self, dest: str, keys: List, *args: List
-    ) -> Union[Awaitable[int], int]:
+    def sdiffstore(self, dest: str, keys: List, *args: List) -> ResponseT[int]:
         """
         Store the difference of sets specified by ``keys`` into a new
         set named ``dest``.  Returns the number of keys in the new set.
@@ -3363,7 +3360,7 @@ class SetCommands(CommandsProtocol):
         args = list_or_args(keys, args)
         return self.execute_command("SDIFFSTORE", dest, *args)
 
-    def sinter(self, keys: List, *args: List) -> Union[Awaitable[list], list]:
+    def sinter(self, keys: List, *args: List) -> ResponseT[list]:
         """
         Return the intersection of sets specified by ``keys``
 
@@ -3374,7 +3371,7 @@ class SetCommands(CommandsProtocol):
 
     def sintercard(
         self, numkeys: int, keys: List[str], limit: int = 0
-    ) -> Union[Awaitable[int], int]:
+    ) -> ResponseT[int]:
         """
         Return the cardinality of the intersect of multiple sets specified by ``keys`.
 
@@ -3387,9 +3384,7 @@ class SetCommands(CommandsProtocol):
         args = [numkeys, *keys, "LIMIT", limit]
         return self.execute_command("SINTERCARD", *args, keys=keys)
 
-    def sinterstore(
-        self, dest: str, keys: List, *args: List
-    ) -> Union[Awaitable[int], int]:
+    def sinterstore(self, dest: str, keys: List, *args: List) -> ResponseT[int]:
         """
         Store the intersection of sets specified by ``keys`` into a new
         set named ``dest``.  Returns the number of keys in the new set.
@@ -3399,9 +3394,7 @@ class SetCommands(CommandsProtocol):
         args = list_or_args(keys, args)
         return self.execute_command("SINTERSTORE", dest, *args)
 
-    def sismember(
-        self, name: str, value: str
-    ) -> Union[Awaitable[Union[Literal[0], Literal[1]]], Union[Literal[0], Literal[1]]]:
+    def sismember(self, name: str, value: str) -> ResponseT[BinaryIntT]:
         """
         Return whether ``value`` is a member of set ``name``:
         - 1 if the value is a member of the set.
@@ -3411,7 +3404,7 @@ class SetCommands(CommandsProtocol):
         """
         return self.execute_command("SISMEMBER", name, value, keys=[name])
 
-    def smembers(self, name: str) -> Union[Awaitable[Set], Set]:
+    def smembers(self, name: str) -> ResponseT[Set]:
         """
         Return all members of the set ``name``
 
@@ -3419,10 +3412,9 @@ class SetCommands(CommandsProtocol):
         """
         return self.execute_command("SMEMBERS", name, keys=[name])
 
-    def smismember(self, name: str, values: List, *args: List) -> Union[
-        Awaitable[List[Union[Literal[0], Literal[1]]]],
-        List[Union[Literal[0], Literal[1]]],
-    ]:
+    def smismember(
+        self, name: str, values: List, *args: List
+    ) -> ResponseT[list[BinaryIntT],]:
         """
         Return whether each value in ``values`` is a member of the set ``name``
         as a list of ``int`` in the order of ``values``:
@@ -3434,7 +3426,7 @@ class SetCommands(CommandsProtocol):
         args = list_or_args(values, args)
         return self.execute_command("SMISMEMBER", name, *args, keys=[name])
 
-    def smove(self, src: str, dst: str, value: str) -> Union[Awaitable[bool], bool]:
+    def smove(self, src: str, dst: str, value: str) -> ResponseT[BinaryIntT]:
         """
         Move ``value`` from set ``src`` to set ``dst`` atomically
 
@@ -3442,7 +3434,9 @@ class SetCommands(CommandsProtocol):
         """
         return self.execute_command("SMOVE", src, dst, value)
 
-    def spop(self, name: str, count: Optional[int] = None) -> Union[str, List, None]:
+    def spop(
+        self, name: str, count: Optional[int] = None
+    ) -> ResponseT[Union[str, list, None]]:
         """
         Remove and return a random member of set ``name``
 
@@ -3453,7 +3447,7 @@ class SetCommands(CommandsProtocol):
 
     def srandmember(
         self, name: str, number: Optional[int] = None
-    ) -> Union[str, List, None]:
+    ) -> ResponseT[Union[str, list, None]]:
         """
         If ``number`` is None, returns a random member of set ``name``.
 
@@ -3466,7 +3460,7 @@ class SetCommands(CommandsProtocol):
         args = (number is not None) and [number] or []
         return self.execute_command("SRANDMEMBER", name, *args)
 
-    def srem(self, name: str, *values: FieldT) -> Union[Awaitable[int], int]:
+    def srem(self, name: str, *values: FieldT) -> ResponseT[int]:
         """
         Remove ``values`` from set ``name``
 
@@ -3474,7 +3468,7 @@ class SetCommands(CommandsProtocol):
         """
         return self.execute_command("SREM", name, *values)
 
-    def sunion(self, keys: List, *args: List) -> Union[Awaitable[List], List]:
+    def sunion(self, keys: List, *args: List) -> ResponseT[list]:
         """
         Return the union of sets specified by ``keys``
 
@@ -3483,9 +3477,7 @@ class SetCommands(CommandsProtocol):
         args = list_or_args(keys, args)
         return self.execute_command("SUNION", *args, keys=args)
 
-    def sunionstore(
-        self, dest: str, keys: List, *args: List
-    ) -> Union[Awaitable[int], int]:
+    def sunionstore(self, dest: str, keys: List, *args: List) -> ResponseT[int]:
         """
         Store the union of sets specified by ``keys`` into a new
         set named ``dest``.  Returns the number of keys in the new set.
@@ -3505,7 +3497,7 @@ class StreamCommands(CommandsProtocol):
     see: https://redis.io/topics/streams-intro
     """
 
-    def xack(self, name: KeyT, groupname: GroupT, *ids: StreamIdT) -> ResponseT:
+    def xack(self, name: KeyT, groupname: GroupT, *ids: StreamIdT) -> ResponseT[int]:
         """
         Acknowledges the successful processing of one or more messages.
         name: name of the stream.
@@ -3526,7 +3518,7 @@ class StreamCommands(CommandsProtocol):
         nomkstream: bool = False,
         minid: Union[StreamIdT, None] = None,
         limit: Union[int, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[Optional[str]]:
         """
         Add to a stream.
         name: name of the stream
@@ -3578,7 +3570,7 @@ class StreamCommands(CommandsProtocol):
         start_id: StreamIdT = "0-0",
         count: Union[int, None] = None,
         justid: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Transfers ownership of pending stream entries that match the specified
         criteria. Conceptually, equivalent to calling XPENDING and then XCLAIM,
@@ -3632,7 +3624,7 @@ class StreamCommands(CommandsProtocol):
         retrycount: Union[int, None] = None,
         force: bool = False,
         justid: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Changes the ownership of a pending message.
 
@@ -3703,7 +3695,7 @@ class StreamCommands(CommandsProtocol):
             kwargs["parse_justid"] = True
         return self.execute_command("XCLAIM", *pieces, **kwargs)
 
-    def xdel(self, name: KeyT, *ids: StreamIdT) -> ResponseT:
+    def xdel(self, name: KeyT, *ids: StreamIdT) -> ResponseT[int]:
         """
         Deletes one or more messages from a stream.
         name: name of the stream.
@@ -3720,7 +3712,7 @@ class StreamCommands(CommandsProtocol):
         id: StreamIdT = "$",
         mkstream: bool = False,
         entries_read: Optional[int] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """
         Create a new consumer group associated with a stream.
         name: name of the stream.
@@ -3739,7 +3731,7 @@ class StreamCommands(CommandsProtocol):
 
     def xgroup_delconsumer(
         self, name: KeyT, groupname: GroupT, consumername: ConsumerT
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Remove a specific consumer from a consumer group.
         Returns the number of pending messages that the consumer had before it
@@ -3764,7 +3756,7 @@ class StreamCommands(CommandsProtocol):
 
     def xgroup_createconsumer(
         self, name: KeyT, groupname: GroupT, consumername: ConsumerT
-    ) -> ResponseT:
+    ) -> ResponseT[BinaryIntT]:
         """
         Consumers in a consumer group are auto-created every time a new
         consumer name is mentioned by some command.
@@ -3785,7 +3777,7 @@ class StreamCommands(CommandsProtocol):
         groupname: GroupT,
         id: StreamIdT,
         entries_read: Optional[int] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[OKT]:
         """
         Set the consumer group last delivered ID to something else.
         name: name of the stream.
@@ -3799,7 +3791,7 @@ class StreamCommands(CommandsProtocol):
             pieces.extend(["ENTRIESREAD", entries_read])
         return self.execute_command("XGROUP SETID", *pieces)
 
-    def xinfo_consumers(self, name: KeyT, groupname: GroupT) -> ResponseT:
+    def xinfo_consumers(self, name: KeyT, groupname: GroupT) -> ResponseT[list]:
         """
         Returns general information about the consumers in the group.
         name: name of the stream.
@@ -3809,7 +3801,7 @@ class StreamCommands(CommandsProtocol):
         """
         return self.execute_command("XINFO CONSUMERS", name, groupname)
 
-    def xinfo_groups(self, name: KeyT) -> ResponseT:
+    def xinfo_groups(self, name: KeyT) -> ResponseT[list]:
         """
         Returns general information about the consumer groups of the stream.
         name: name of the stream.
@@ -3818,7 +3810,7 @@ class StreamCommands(CommandsProtocol):
         """
         return self.execute_command("XINFO GROUPS", name)
 
-    def xinfo_stream(self, name: KeyT, full: bool = False) -> ResponseT:
+    def xinfo_stream(self, name: KeyT, full: bool = False) -> ResponseT[list]:
         """
         Returns general information about the stream.
         name: name of the stream.
@@ -3833,7 +3825,7 @@ class StreamCommands(CommandsProtocol):
             options = {"full": full}
         return self.execute_command("XINFO STREAM", *pieces, **options)
 
-    def xlen(self, name: KeyT) -> ResponseT:
+    def xlen(self, name: KeyT) -> ResponseT[int]:
         """
         Returns the number of elements in a given stream.
 
@@ -3841,7 +3833,7 @@ class StreamCommands(CommandsProtocol):
         """
         return self.execute_command("XLEN", name, keys=[name])
 
-    def xpending(self, name: KeyT, groupname: GroupT) -> ResponseT:
+    def xpending(self, name: KeyT, groupname: GroupT) -> ResponseT[list]:
         """
         Returns information about pending messages of a group.
         name: name of the stream.
@@ -3860,7 +3852,7 @@ class StreamCommands(CommandsProtocol):
         count: int,
         consumername: Union[ConsumerT, None] = None,
         idle: Union[int, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Returns information about pending messages, in a range.
 
@@ -3914,7 +3906,7 @@ class StreamCommands(CommandsProtocol):
         min: StreamIdT = "-",
         max: StreamIdT = "+",
         count: Union[int, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Read stream values within an interval.
 
@@ -3945,7 +3937,7 @@ class StreamCommands(CommandsProtocol):
         streams: Dict[KeyT, StreamIdT],
         count: Union[int, None] = None,
         block: Union[int, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[Optional[list]]:
         """
         Block and monitor multiple streams for new data.
 
@@ -3986,7 +3978,7 @@ class StreamCommands(CommandsProtocol):
         count: Union[int, None] = None,
         block: Union[int, None] = None,
         noack: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[Optional[list]]:
         """
         Read from a stream via a consumer group.
 
@@ -4031,7 +4023,7 @@ class StreamCommands(CommandsProtocol):
         max: StreamIdT = "+",
         min: StreamIdT = "-",
         count: Union[int, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[list]:
         """
         Read stream values within an interval, in reverse order.
 
@@ -4064,7 +4056,7 @@ class StreamCommands(CommandsProtocol):
         approximate: bool = True,
         minid: Union[StreamIdT, None] = None,
         limit: Union[int, None] = None,
-    ) -> ResponseT:
+    ) -> ResponseT[int]:
         """
         Trims old messages from a stream.
         name: name of the stream.
@@ -4120,7 +4112,7 @@ class SortedSetCommands(CommandsProtocol):
         incr: bool = False,
         gt: bool = False,
         lt: bool = False,
-    ) -> ResponseT:
+    ) -> ResponseT[Union[None, int, str]]:
         """
         Set any number of element-name, score pairs to the key ``name``. Pairs
         are specified as a dict of element-names keys to score values.
@@ -4188,7 +4180,7 @@ class SortedSetCommands(CommandsProtocol):
             pieces.append(pair[0])
         return self.execute_command("ZADD", name, *pieces, **options)
 
-    def zcard(self, name: KeyT) -> ResponseT:
+    def zcard(self, name: KeyT) -> ResponseT[int]:
         """
         Return the number of elements in the sorted set ``name``
 
@@ -4196,7 +4188,9 @@ class SortedSetCommands(CommandsProtocol):
         """
         return self.execute_command("ZCARD", name, keys=[name])
 
-    def zcount(self, name: KeyT, min: ZScoreBoundT, max: ZScoreBoundT) -> ResponseT:
+    def zcount(
+        self, name: KeyT, min: ZScoreBoundT, max: ZScoreBoundT
+    ) -> ResponseT[int]:
         """
         Returns the number of elements in the sorted set at key ``name`` with
         a score between ``min`` and ``max``.
@@ -4205,7 +4199,7 @@ class SortedSetCommands(CommandsProtocol):
         """
         return self.execute_command("ZCOUNT", name, min, max, keys=[name])
 
-    def zdiff(self, keys: KeysT, withscores: bool = False) -> ResponseT:
+    def zdiff(self, keys: KeysT, withscores: bool = False) -> ResponseT[list]:
         """
         Returns the difference between the first and all successive input
         sorted sets provided in ``keys``.

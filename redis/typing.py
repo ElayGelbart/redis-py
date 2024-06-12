@@ -37,6 +37,7 @@ KeysT = Union[KeyT, Iterable[KeyT]]
 OldResponseT = Union[Awaitable[Any], Any]  # Deprecated
 AnyResponseT = TypeVar("AnyResponseT", bound=Any)
 ResponseT = Union[AnyResponseT, Awaitable[AnyResponseT]]
+BinaryIntT = Union[Literal[0], Literal[1]]
 OKT = Literal["OK"]
 ChannelT = _StringLikeT
 GroupT = _StringLikeT  # Consumer group
