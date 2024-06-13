@@ -1,0 +1,6 @@
+* list types were wrong sometimes, example - not include nill reply in return types.
+* some optional function argument types were wrongly typed as non-optional.
+* some return types were Union of awaitable and non-awaitable types, and some were not.
+* OK Type was not used in some places where it should have been used.
+* some types were typed wrong, example - 1 or 0 were typed as bool, but they should be typed as int.
+* some class were initialized twice.
