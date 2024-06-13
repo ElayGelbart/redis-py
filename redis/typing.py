@@ -1,20 +1,34 @@
 # from __future__ import annotations
 
-from curses import OK
+import ast
+import sys
+from calendar import c
 from datetime import datetime, timedelta
+
+import bs4
+
+original_sys_path = sys.path.copy()
+sys.path = original_sys_path[1:]
 from typing import (
     TYPE_CHECKING,
     Any,
     Awaitable,
     Iterable,
+    List,
     Literal,
     Mapping,
+    Optional,
     Protocol,
+    Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
 )
 
+import requests
+
+sys.path = original_sys_path
 if TYPE_CHECKING:
     from redis._parsers import Encoder
     from redis.asyncio.connection import ConnectionPool as AsyncConnectionPool
@@ -39,6 +53,10 @@ AnyResponseT = TypeVar("AnyResponseT", bound=Any)
 ResponseT = Union[AnyResponseT, Awaitable[AnyResponseT]]
 BinaryIntT = Union[Literal[0], Literal[1]]
 OKT = Literal["OK"]
+ArrayResponseT = list
+IntegerResponseT = int
+NullResponseT = None
+BulkStringResponseT = str
 ChannelT = _StringLikeT
 GroupT = _StringLikeT  # Consumer group
 ConsumerT = _StringLikeT  # Consumer name
@@ -67,3 +85,229 @@ class ClusterCommandsProtocol(CommandsProtocol, Protocol):
     encoder: "Encoder"
 
     def execute_command(self, *args, **options) -> Union[Any, Awaitable]: ...
+
+
+ignore_function_names = [
+    "__init__",
+    "__new__",
+    "__repr__",
+    "__str__",
+    "__eq__",
+    "__call__",
+    "get_encoder",
+]
+
+functions_changed = []
+functions_not_changed = []
+no_exec_function_list = []
+no_return_function_list = []
+no_found_in_official_docs = []
+
+
+def redis_string_to_type(redis_type_string: str):
+    if redis_type_string == "Array reply":
+        return "ArrayResponseT"
+    elif redis_type_string == "Integer reply":
+        return "IntegerResponseT"
+    elif redis_type_string == "Nil reply" or redis_type_string == "Null reply":
+        return "NullResponseT"
+    elif redis_type_string == "Bulk string reply":
+        return "BulkStringResponseT"
+    elif redis_type_string == "Simple string reply":
+        return "OKT"
+    print(f"Unknown type Do Not IGNORE {redis_type_string}")
+    return "Ignore me"
+
+
+def change_python_function_TODO_type(function_node: ast.FunctionDef):
+    print(f"Changing {function_node.name} return type to None")
+    function_node.returns = ast.Name(id="TODO", ctx=ast.Load())
+    return None
+
+
+def change_python_function_no_return_type(function_node: ast.FunctionDef):
+    print(f"Changing {function_node.name} return type to None")
+    function_node.returns = ast.Name(id="None", ctx=ast.Load())
+    return None
+
+
+def change_python_function_return_type(
+    function_node: ast.FunctionDef, return_types: list[str]
+):
+    if len(return_types) > 1:
+        print(
+            f"Changing {function_node.name} return type to ResponseT[Union{return_types}]"
+        )
+        # check if type is subscript
+        return_slice = ast.Subscript(
+            value=ast.Name(id="Union", ctx=ast.Load()),
+            slice=ast.Tuple(
+                elts=[
+                    ast.Name(id=str(sing_return_type), ctx=ast.Load())
+                    for sing_return_type in return_types
+                ],
+            ),
+        )
+    elif len(return_types) == 1:
+        print(
+            f"Changing {function_node.name} return type to ResponseT[{return_types[0]}]"
+        )
+        return_slice = ast.Name(id=str(return_types[0]), ctx=ast.Load())
+    function_node.returns = ast.Subscript(
+        value=ast.Name(id="ResponseT", ctx=ast.Load()),
+        slice=return_slice,
+    )
+    return None
+
+
+def get_official_type_hints(function_name: str, execute_command: str):
+    redis_base_commands_url = "https://redis.io/docs/latest/commands"
+    url_command_name = execute_command.lower().replace("_", "-").replace(" ", "-")
+    print(f"Checking Function: {function_name} with URL Param: {url_command_name}")
+    response = requests.get(f"{redis_base_commands_url}/{url_command_name}/")
+    if len(response.history) > 1:
+        no_found_in_official_docs.append(function_name)
+        raise Exception(f"Cannot find {function_name} in official redis docs")
+    soup = bs4.BeautifulSoup(response.text, "html.parser")
+    returns_type_list = []
+    for reply_header_html_id in ["resp2resp3-reply", "resp2-reply"]:
+        reply_element_header = soup.find(None, {"id": reply_header_html_id})
+        if not reply_element_header:
+            if reply_header_html_id == "resp2-reply":
+                raise Exception(
+                    f"Couldn't find response HEADER for Function: {function_name} in DOCS"
+                )
+            continue
+        below_element = reply_element_header.find_next_sibling()
+        if not below_element:
+            raise Exception(
+                f"Couldn't find below element for {function_name} with id {reply_header_html_id}"
+            )
+        if (
+            below_element.text.find("One of the following:") > -1
+            or below_element.text.find("Any of the following:") > -1
+            or below_element.name == "ul"
+        ):
+            next_ul_element = (
+                below_element
+                if below_element.name == "ul"
+                else below_element.find_next("ul")
+            )
+            if not next_ul_element or isinstance(next_ul_element, bs4.NavigableString):
+                raise Exception(
+                    f"Couldn't find next UL element for Function: {function_name}"
+                )
+            for li_element in next_ul_element.find_all("li"):
+                first_a_element = li_element.find("a")
+                if first_a_element:
+                    type_hint = redis_string_to_type(first_a_element.text)
+                    if type_hint == "Ignore me":
+                        continue
+                    returns_type_list.append(type_hint)
+            return returns_type_list
+
+        elif below_element.name == "p":
+            has_a_inside = below_element.find("a")
+            if has_a_inside:
+                type_hint = redis_string_to_type(has_a_inside.text)
+                if type_hint == "Ignore me":
+                    continue
+                return [type_hint]
+
+        elif below_element.name == "a":
+            type_hint = redis_string_to_type(below_element.text)
+            if type_hint == "Ignore me":
+                continue
+            return [type_hint]
+
+        next_ul_before_h_element = below_element.find_next("ul")
+        if next_ul_before_h_element:
+            if isinstance(next_ul_before_h_element, bs4.NavigableString):
+                continue
+            for li_element in next_ul_before_h_element.find_all("li"):
+                first_a_element = li_element.find("a")
+                if first_a_element:
+                    type_hint = redis_string_to_type(first_a_element.text)
+                    if type_hint == "Ignore me":
+                        continue
+                    returns_type_list.append(type_hint)
+            return returns_type_list
+
+        if below_element.text.find("Non-standard return value") > -1:
+            return ["Any"]
+
+        print(f"couldn't find type hint in response for Function: {function_name}")
+        print(f"below element is {below_element}")
+        is_this_ok = input("y/n: ")
+        if is_this_ok == "y":
+            continue
+        return None
+    print(f"found {function_name} and change response typing")
+
+
+def get_return_types_from_file_without_exec(filename):
+    with open(filename, "r") as file:
+        tree = ast.parse(file.read(), filename=filename)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            if node.name in ignore_function_names:
+                continue
+            all_return_statements = [
+                statement
+                for statement in node.body
+                if isinstance(statement, ast.Return)
+            ]
+            try:
+                if not all_return_statements:
+                    if isinstance(node.body[0], ast.Raise) or isinstance(
+                        node.body[1], ast.Raise
+                    ):
+                        change_python_function_no_return_type(node)
+                        no_return_function_list.append(node.name)
+                        continue
+                    raise Exception(f"Function {node.name} has no return")
+                has_no_exec_return = False
+                for return_statement in all_return_statements:
+                    if return_statement.value.func.attr != "execute_command":
+                        no_exec_function_list.append(node.name)
+                        has_no_exec_return = True
+                if has_no_exec_return:
+                    continue
+
+                if len(all_return_statements) > 1:
+                    raise Exception(
+                        f"Function {node.name} has multiple return execute_command"
+                    )
+                execute_command = all_return_statements[0].value.args[0].value
+                if not isinstance(execute_command, str):
+                    no_exec_function_list.append(node.name)
+                    continue
+                print(
+                    f"Function {node.name} is valid and only returns execute_command {execute_command}"
+                )
+                function_official_type = get_official_type_hints(
+                    node.name, execute_command
+                )
+                if function_official_type:
+                    change_python_function_return_type(node, function_official_type)
+                    functions_changed.append(node.name)
+            except Exception as e:
+                print("ERROR")
+                print(e)
+                print("ERROR")
+                functions_not_changed.append(node.name)
+                change_python_function_TODO_type(node)
+                # stop_all = input("stop all ? y/n: ")
+                # if stop_all == "y":
+                #     return
+            print("\n")
+    with open(filename, "w") as file:
+        file.write(ast.unparse(tree))
+    print(f"Changed {len(functions_changed)} functions")
+    return None
+
+
+if __name__ == "__main__":
+    filename = "redis/commands/core.py"
+    return_types = get_return_types_from_file_without_exec(filename)
+    print(return_types)
