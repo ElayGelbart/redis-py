@@ -3,7 +3,7 @@ import hashlib
 import warnings
 from typing import TYPE_CHECKING, AsyncIterator, Awaitable, Callable, Dict, Iterable, Iterator, List, Literal, Mapping, Optional, Sequence, Set, Tuple, Union
 from redis.exceptions import ConnectionError, DataError, NoScriptError, RedisError
-from redis.typing import OKT, AbsExpiryT, AnyKeyT, ArrayResponseT, BinaryIntT, BitfieldOffsetT, BulkStringResponseT, ChannelT, CommandsProtocol, ConsumerT, EncodableT, ExpiryT, FieldT, GroupT, KeysT, KeyT, NullResponseT, PatternT, ResponseT, ScriptTextT, StreamIdT, TimeoutSecT, ZScoreBoundT
+from redis.typing import AbsExpiryT, AnyKeyT, BitfieldOffsetT, ChannelT, CommandsProtocol, ConsumerT, EncodableT, ExpiryT, FieldT, GroupT, KeysT, KeyT, PatternT, ResponseT, ScriptTextT, StreamIdT, TimeoutSecT, ZScoreBoundT
 from .helpers import list_or_args
 if TYPE_CHECKING:
     from redis.asyncio.client import Redis as AsyncRedis
@@ -61,7 +61,7 @@ class ACLCommands(CommandsProtocol):
                 raise DataError('genpass optionally accepts a bits argument, between 0 and 4096.')
         return self.execute_command('ACL GENPASS', *pieces, **kwargs)
 
-    def acl_getuser(self, username: str, **kwargs) -> ResponseT[Union[ArrayResponseT, NullResponseT]]:
+    def acl_getuser(self, username: str, **kwargs) -> ResponseT[Union[NullResponseT, ArrayResponseT]]:
         """
         Get the ACL details for the specified ``username``.
 
@@ -87,7 +87,7 @@ class ACLCommands(CommandsProtocol):
         """
         return self.execute_command('ACL LIST', **kwargs)
 
-    def acl_log(self, count: Union[int, None]=None, **kwargs) -> ResponseT[Union[ArrayResponseT, OKT]]:
+    def acl_log(self, count: Union[int, None]=None, **kwargs) -> ResponseT[Union[OKT, ArrayResponseT]]:
         """
         Get ACL logs as a list.
         :param int count: Get logs[0:count].
@@ -102,7 +102,7 @@ class ACLCommands(CommandsProtocol):
             args.append(count)
         return self.execute_command('ACL LOG', *args, **kwargs)
 
-    def acl_log_reset(self, **kwargs) -> ResponseT[Union[ArrayResponseT, OKT]]:
+    def acl_log_reset(self, **kwargs) -> ResponseT[Union[OKT, ArrayResponseT]]:
         """
         Reset ACL logs.
         :rtype: Boolean.
@@ -302,14 +302,14 @@ class ManagementCommands(CommandsProtocol):
         pieces.append(password)
         return self.execute_command('AUTH', *pieces, **kwargs)
 
-    def bgrewriteaof(self, **kwargs) -> ResponseT[OKT]:
+    def bgrewriteaof(self, **kwargs) -> ResponseT[str]:
         """Tell the Redis server to rewrite the AOF file from data in memory.
 
         For more information see https://redis.io/commands/bgrewriteaof
         """
         return self.execute_command('BGREWRITEAOF', **kwargs)
 
-    def bgsave(self, schedule: bool=True, **kwargs) -> ResponseT[Union[OKT, OKT]]:
+    def bgsave(self, schedule: bool=True, **kwargs) -> ResponseT[str]:
         """
         Tell the Redis server to save its data to disk.  Unlike save(),
         this method is asynchronous and returns immediately.
@@ -413,7 +413,7 @@ class ManagementCommands(CommandsProtocol):
             args.append(' '.join(client_id))
         return self.execute_command('CLIENT LIST', *args, **kwargs)
 
-    def client_getname(self, **kwargs) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def client_getname(self, **kwargs) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Returns the current connection name
 
@@ -421,7 +421,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command('CLIENT GETNAME', **kwargs)
 
-    def client_getredir(self, **kwargs) -> ResponseT[Union[IntegerResponseT, IntegerResponseT, IntegerResponseT]]:
+    def client_getredir(self, **kwargs) -> ResponseT[IntegerResponseT]:
         """
         Returns the ID (an integer) of the client to whom we are
         redirecting tracking notifications.
@@ -460,7 +460,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command('CLIENT ID', **kwargs)
 
-    def client_tracking_on(self, clientid: Union[int, None]=None, prefix: Sequence[KeyT]=[], bcast: bool=False, optin: bool=False, optout: bool=False, noloop: bool=False) -> ResponseT[OKT]:
+    def client_tracking_on(self, clientid: Union[int, None]=None, prefix: Sequence[KeyT]=[], bcast: bool=False, optin: bool=False, optout: bool=False, noloop: bool=False) -> ResponseT:
         """
         Turn on the tracking mode.
         For more information about the options look at client_tracking func.
@@ -469,7 +469,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.client_tracking(True, clientid, prefix, bcast, optin, optout, noloop)
 
-    def client_tracking_off(self, clientid: Union[int, None]=None, prefix: Sequence[KeyT]=[], bcast: bool=False, optin: bool=False, optout: bool=False, noloop: bool=False) -> ResponseT[OKT]:
+    def client_tracking_off(self, clientid: Union[int, None]=None, prefix: Sequence[KeyT]=[], bcast: bool=False, optin: bool=False, optout: bool=False, noloop: bool=False) -> ResponseT:
         """
         Turn off the tracking mode.
         For more information about the options look at client_tracking func.
@@ -555,7 +555,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command('CLIENT SETINFO', attr, value, **kwargs)
 
-    def client_unblock(self, client_id: int, error: bool=False, **kwargs) -> ResponseT[int]:
+    def client_unblock(self, client_id: int, error: bool=False, **kwargs) -> ResponseT[IntegerResponseT]:
         """
         Unblocks a connection by its client id.
         If ``error`` is True, unblocks the client with a special error message.
@@ -848,14 +848,14 @@ class ManagementCommands(CommandsProtocol):
         else:
             return self.execute_command('LOLWUT', **kwargs)
 
-    def reset(self) -> ResponseT[OKT]:
+    def reset(self) -> ResponseT[str]:
         """Perform a full reset on the connection's server side contenxt.
 
         See: https://redis.io/commands/reset
         """
         return self.execute_command('RESET')
 
-    def migrate(self, host: str, port: int, keys: KeysT, destination_db: int, timeout: int, copy: bool=False, replace: bool=False, auth: Union[str, None]=None, **kwargs) -> ResponseT[Union[OKT, OKT]]:
+    def migrate(self, host: str, port: int, keys: KeysT, destination_db: int, timeout: int, copy: bool=False, replace: bool=False, auth: Union[str, None]=None, **kwargs) -> ResponseT[Union[OKT, str]]:
         """
         Migrate 1 or more keys from the current Redis server to a different
         server specified by the ``host``, ``port`` and ``destination_db``.
@@ -918,7 +918,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command('MEMORY MALLOC-STATS', **kwargs)
 
-    def memory_usage(self, key: KeyT, samples: Union[int, None]=None, **kwargs) -> ResponseT[Union[IntegerResponseT, NullResponseT]]:
+    def memory_usage(self, key: KeyT, samples: Union[int, None]=None, **kwargs) -> ResponseT[Union[NullResponseT, IntegerResponseT]]:
         """
         Return the total memory usage for key, its value and associated
         administrative overheads.
@@ -973,7 +973,7 @@ class ManagementCommands(CommandsProtocol):
         """
         return self.execute_command('LATENCY RESET', *events)
 
-    def ping(self, **kwargs) -> ResponseT[Union[OKT, BulkStringResponseT]]:
+    def ping(self, **kwargs) -> ResponseT[Union[str, BulkStringResponseT]]:
         """
         Ping the Redis server
 
@@ -1056,7 +1056,7 @@ class ManagementCommands(CommandsProtocol):
             return self.execute_command('SLAVEOF', b'NO', b'ONE', **kwargs)
         return self.execute_command('SLAVEOF', host, port, **kwargs)
 
-    def slowlog_get(self, num: Union[int, None]=None, **kwargs) -> ResponseT[list]:
+    def slowlog_get(self, num: Union[int, None]=None, **kwargs) -> ResponseT[ArrayResponseT]:
         """
         Get the entries from the slowlog. If ``num`` is specified, get the
         most recent ``num`` items.
@@ -1263,7 +1263,7 @@ class BitFieldOperation:
             cmd.extend(ops)
         return cmd
 
-    def execute(self) -> ResponseT[list]:
+    def execute(self) -> TODO:
         """
         Execute the operation(s) in a single BITFIELD command. The return value
         is a list of values corresponding to each operation. If the client
@@ -1340,7 +1340,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('BITOP', operation, dest, *keys)
 
-    def bitpos(self, key: KeyT, bit: int, start: Union[int, None]=None, end: Union[int, None]=None, mode: Optional[str]=None) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def bitpos(self, key: KeyT, bit: int, start: Union[int, None]=None, end: Union[int, None]=None, mode: Optional[str]=None) -> ResponseT[IntegerResponseT]:
         """
         Return the position of the first bit set to 1 or 0 in a string.
         ``start`` and ``end`` defines search range. The range is interpreted
@@ -1361,7 +1361,7 @@ class BasicKeyCommands(CommandsProtocol):
             params.append(mode)
         return self.execute_command('BITPOS', *params, keys=[key])
 
-    def copy(self, source: str, destination: str, destination_db: Union[str, None]=None, replace: bool=False) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def copy(self, source: str, destination: str, destination_db: Union[str, None]=None, replace: bool=False) -> ResponseT[IntegerResponseT]:
         """
         Copy the value stored in the ``source`` key to the ``destination`` key.
 
@@ -1400,7 +1400,7 @@ class BasicKeyCommands(CommandsProtocol):
     def __delitem__(self, name: KeyT) -> TODO:
         self.delete(name)
 
-    def dump(self, name: KeyT) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def dump(self, name: KeyT) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Return a serialized version of the value stored at the specified key.
         If key does not exist a nil bulk reply is returned.
@@ -1421,7 +1421,7 @@ class BasicKeyCommands(CommandsProtocol):
         return self.execute_command('EXISTS', *names, keys=names)
     __contains__ = exists
 
-    def expire(self, name: KeyT, time: ExpiryT, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def expire(self, name: KeyT, time: ExpiryT, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[IntegerResponseT]:
         """
         Set an expire flag on key ``name`` for ``time`` seconds with given
         ``option``. ``time`` can be represented by an integer or a Python timedelta
@@ -1448,7 +1448,7 @@ class BasicKeyCommands(CommandsProtocol):
             exp_option.append('LT')
         return self.execute_command('EXPIRE', name, time, *exp_option)
 
-    def expireat(self, name: KeyT, when: AbsExpiryT, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def expireat(self, name: KeyT, when: AbsExpiryT, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[IntegerResponseT]:
         """
         Set an expire flag on key ``name`` with given ``option``. ``when``
         can be represented as an integer indicating unix time or a Python
@@ -1475,7 +1475,7 @@ class BasicKeyCommands(CommandsProtocol):
             exp_option.append('LT')
         return self.execute_command('EXPIREAT', name, when, *exp_option)
 
-    def expiretime(self, key: str) -> ResponseT[Union[IntegerResponseT, IntegerResponseT, IntegerResponseT]]:
+    def expiretime(self, key: str) -> ResponseT[IntegerResponseT]:
         """
         Returns the absolute Unix timestamp (since January 1, 1970) in seconds
         at which the given key will expire.
@@ -1484,7 +1484,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('EXPIRETIME', key)
 
-    def get(self, name: KeyT) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def get(self, name: KeyT) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Return the value at key ``name``, or None if the key doesn't exist
 
@@ -1492,7 +1492,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('GET', name, keys=[name])
 
-    def getdel(self, name: KeyT) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def getdel(self, name: KeyT) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Get the value at key ``name`` and delete the key. This command
         is similar to GET, except for the fact that it also deletes
@@ -1562,7 +1562,7 @@ class BasicKeyCommands(CommandsProtocol):
             return value
         raise KeyError(name)
 
-    def getbit(self, name: KeyT, offset: int) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def getbit(self, name: KeyT, offset: int) -> ResponseT[IntegerResponseT]:
         """
         Returns an integer indicating the value of ``offset`` in ``name``
 
@@ -1579,7 +1579,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('GETRANGE', key, start, end, keys=[key])
 
-    def getset(self, name: KeyT, value: EncodableT) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def getset(self, name: KeyT, value: EncodableT) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Sets the value at key ``name`` to ``value``
         and returns the old value at key ``name`` atomically.
@@ -1629,7 +1629,7 @@ class BasicKeyCommands(CommandsProtocol):
         params = [first_list, second_list, src, dest]
         return self.execute_command('LMOVE', *params)
 
-    def blmove(self, first_list: str, second_list: str, timeout: int, src: str='LEFT', dest: str='RIGHT') -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def blmove(self, first_list: str, second_list: str, timeout: int, src: str='LEFT', dest: str='RIGHT') -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Blocking version of lmove.
 
@@ -1665,7 +1665,7 @@ class BasicKeyCommands(CommandsProtocol):
             items.extend(pair)
         return self.execute_command('MSET', *items)
 
-    def msetnx(self, mapping: Mapping[AnyKeyT, EncodableT]) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def msetnx(self, mapping: Mapping[AnyKeyT, EncodableT]) -> ResponseT[IntegerResponseT]:
         """
         Sets key/values based on a mapping if none of the keys are already set.
         Mapping is a dictionary of key/value pairs. Both keys and values
@@ -1679,7 +1679,7 @@ class BasicKeyCommands(CommandsProtocol):
             items.extend(pair)
         return self.execute_command('MSETNX', *items)
 
-    def move(self, name: KeyT, db: int) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def move(self, name: KeyT, db: int) -> ResponseT[IntegerResponseT]:
         """
         Moves the key ``name`` to a different Redis database ``db``
 
@@ -1687,7 +1687,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('MOVE', name, db)
 
-    def persist(self, name: KeyT) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def persist(self, name: KeyT) -> ResponseT[IntegerResponseT]:
         """
         Removes an expiration on ``name``
 
@@ -1695,7 +1695,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('PERSIST', name)
 
-    def pexpire(self, name: KeyT, time: ExpiryT, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def pexpire(self, name: KeyT, time: ExpiryT, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[IntegerResponseT]:
         """
         Set an expire flag on key ``name`` for ``time`` milliseconds
         with given ``option``. ``time`` can be represented by an
@@ -1722,7 +1722,7 @@ class BasicKeyCommands(CommandsProtocol):
             exp_option.append('LT')
         return self.execute_command('PEXPIRE', name, time, *exp_option)
 
-    def pexpireat(self, name: KeyT, when: AbsExpiryT, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def pexpireat(self, name: KeyT, when: AbsExpiryT, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[IntegerResponseT]:
         """
         Set an expire flag on key ``name`` with given ``option``. ``when``
         can be represented as an integer representing unix time in
@@ -1749,7 +1749,7 @@ class BasicKeyCommands(CommandsProtocol):
             exp_option.append('LT')
         return self.execute_command('PEXPIREAT', name, when, *exp_option)
 
-    def pexpiretime(self, key: str) -> ResponseT[Union[IntegerResponseT, IntegerResponseT, IntegerResponseT]]:
+    def pexpiretime(self, key: str) -> ResponseT[IntegerResponseT]:
         """
         Returns the absolute Unix timestamp (since January 1, 1970) in milliseconds
         at which the given key will expire.
@@ -1770,7 +1770,7 @@ class BasicKeyCommands(CommandsProtocol):
             time_ms = int(time_ms.total_seconds() * 1000)
         return self.execute_command('PSETEX', name, time_ms, value)
 
-    def pttl(self, name: KeyT) -> ResponseT[Union[IntegerResponseT, IntegerResponseT, IntegerResponseT]]:
+    def pttl(self, name: KeyT) -> ResponseT[IntegerResponseT]:
         """
         Returns the number of milliseconds until the key ``name`` will expire
 
@@ -1778,7 +1778,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('PTTL', name)
 
-    def hrandfield(self, key: str, count: Optional[int]=None, withvalues: bool=False) -> ResponseT[Union[NullResponseT, BulkStringResponseT, ArrayResponseT, ArrayResponseT]]:
+    def hrandfield(self, key: str, count: int=None, withvalues: bool=False) -> ResponseT[Union[NullResponseT, BulkStringResponseT, ArrayResponseT]]:
         """
         Return a random field from the hash value stored at key.
 
@@ -1815,7 +1815,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('RENAME', src, dst)
 
-    def renamenx(self, src: KeyT, dst: KeyT) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def renamenx(self, src: KeyT, dst: KeyT) -> ResponseT[IntegerResponseT]:
         """
         Rename key ``src`` to ``dst`` if ``dst`` doesn't already exist
 
@@ -1862,7 +1862,7 @@ class BasicKeyCommands(CommandsProtocol):
                 raise DataError('frequency must be an integer')
         return self.execute_command('RESTORE', *params)
 
-    def set(self, name: KeyT, value: EncodableT, ex: Union[ExpiryT, None]=None, px: Union[ExpiryT, None]=None, nx: bool=False, xx: bool=False, keepttl: bool=False, get: bool=False, exat: Union[AbsExpiryT, None]=None, pxat: Union[AbsExpiryT, None]=None) -> ResponseT[Union[NullResponseT, OKT, NullResponseT, BulkStringResponseT]]:
+    def set(self, name: KeyT, value: EncodableT, ex: Union[ExpiryT, None]=None, px: Union[ExpiryT, None]=None, nx: bool=False, xx: bool=False, keepttl: bool=False, get: bool=False, exat: Union[AbsExpiryT, None]=None, pxat: Union[AbsExpiryT, None]=None) -> ResponseT[Union[NullResponseT, OKT, BulkStringResponseT]]:
         """
         Set the value at key ``name`` to ``value``
 
@@ -1957,7 +1957,7 @@ class BasicKeyCommands(CommandsProtocol):
             time = int(time.total_seconds())
         return self.execute_command('SETEX', name, time, value)
 
-    def setnx(self, name: KeyT, value: EncodableT) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def setnx(self, name: KeyT, value: EncodableT) -> ResponseT[IntegerResponseT]:
         """
         Set the value of key ``name`` to ``value`` if key doesn't exist
 
@@ -2046,7 +2046,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('TOUCH', *args)
 
-    def ttl(self, name: KeyT) -> ResponseT[Union[IntegerResponseT, IntegerResponseT, IntegerResponseT]]:
+    def ttl(self, name: KeyT) -> ResponseT[IntegerResponseT]:
         """
         Returns the number of seconds until the key ``name`` will expire
 
@@ -2054,7 +2054,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('TTL', name)
 
-    def type(self, name: KeyT) -> ResponseT[OKT]:
+    def type(self, name: KeyT) -> ResponseT[str]:
         """
         Returns the type of key ``name``
 
@@ -2086,7 +2086,7 @@ class BasicKeyCommands(CommandsProtocol):
         """
         return self.execute_command('UNLINK', *names)
 
-    def lcs(self, key1: str, key2: str, len: Optional[bool]=False, idx: Optional[bool]=False, minmatchlen: Optional[int]=0, withmatchlen: Optional[bool]=False) -> ResponseT[Union[BulkStringResponseT, IntegerResponseT, ArrayResponseT]]:
+    def lcs(self, key1: str, key2: str, len: Optional[bool]=False, idx: Optional[bool]=False, minmatchlen: Optional[int]=0, withmatchlen: Optional[bool]=False) -> ResponseT[Union[IntegerResponseT, BulkStringResponseT, ArrayResponseT]]:
         """
         Find the longest common subsequence between ``key1`` and ``key2``.
         If ``len`` is true the length of the match will will be returned.
@@ -2171,7 +2171,7 @@ class ListCommands(CommandsProtocol):
         keys.append(timeout)
         return self.execute_command('BRPOP', *keys)
 
-    def brpoplpush(self, src: str, dst: str, timeout: Optional[int]=0) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def brpoplpush(self, src: str, dst: str, timeout: Optional[int]=0) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Pop a value off the tail of ``src``, push it on the head of ``dst``
         and then return it.
@@ -2222,7 +2222,7 @@ class ListCommands(CommandsProtocol):
         """
         return self.execute_command('LINDEX', name, index, keys=[name])
 
-    def linsert(self, name: str, where: str, refvalue: str, value: str) -> ResponseT[Union[IntegerResponseT, IntegerResponseT, IntegerResponseT]]:
+    def linsert(self, name: str, where: str, refvalue: str, value: str) -> ResponseT[IntegerResponseT]:
         """
         Insert ``value`` in list ``name`` either immediately before or after
         [``where``] ``refvalue``
@@ -2334,7 +2334,7 @@ class ListCommands(CommandsProtocol):
         else:
             return self.execute_command('RPOP', name)
 
-    def rpoplpush(self, src: str, dst: str) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def rpoplpush(self, src: str, dst: str) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         RPOP a value off of the ``src`` list and atomically LPUSH it
         on to the ``dst`` list.  Returns the value.
@@ -2446,7 +2446,7 @@ class ListCommands(CommandsProtocol):
         options['keys'] = [name]
         return self.execute_command('SORT', *pieces, **options)
 
-    def sort_ro(self, key: str, start: Optional[int]=None, num: Optional[int]=None, by: Optional[str]=None, get: Optional[List[str]]=None, desc: bool=False, alpha: bool=False) -> ResponseT[list]:
+    def sort_ro(self, key: str, start: Optional[int]=None, num: Optional[int]=None, by: Optional[str]=None, get: Optional[List[str]]=None, desc: bool=False, alpha: bool=False) -> list:
         """
         Returns the elements contained in the list, set or sorted set at key.
         (read-only variant of the SORT command)
@@ -2780,7 +2780,7 @@ class SetCommands(CommandsProtocol):
         args = list_or_args(keys, args)
         return self.execute_command('SINTERSTORE', dest, *args)
 
-    def sismember(self, name: str, value: str) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def sismember(self, name: str, value: str) -> ResponseT[IntegerResponseT]:
         """
         Return whether ``value`` is a member of set ``name``:
         - 1 if the value is a member of the set.
@@ -2810,7 +2810,7 @@ class SetCommands(CommandsProtocol):
         args = list_or_args(values, args)
         return self.execute_command('SMISMEMBER', name, *args, keys=[name])
 
-    def smove(self, src: str, dst: str, value: str) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def smove(self, src: str, dst: str, value: str) -> ResponseT[IntegerResponseT]:
         """
         Move ``value`` from set ``src`` to set ``dst`` atomically
 
@@ -2885,7 +2885,7 @@ class StreamCommands(CommandsProtocol):
         """
         return self.execute_command('XACK', name, groupname, *ids)
 
-    def xadd(self, name: KeyT, fields: Dict[FieldT, EncodableT], id: StreamIdT='*', maxlen: Union[int, None]=None, approximate: bool=True, nomkstream: bool=False, minid: Union[StreamIdT, None]=None, limit: Union[int, None]=None) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def xadd(self, name: KeyT, fields: Dict[FieldT, EncodableT], id: StreamIdT='*', maxlen: Union[int, None]=None, approximate: bool=True, nomkstream: bool=False, minid: Union[StreamIdT, None]=None, limit: Union[int, None]=None) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Add to a stream.
         name: name of the stream
@@ -2964,7 +2964,7 @@ class StreamCommands(CommandsProtocol):
             kwargs['parse_justid'] = True
         return self.execute_command('XAUTOCLAIM', *pieces, **kwargs)
 
-    def xclaim(self, name: KeyT, groupname: GroupT, consumername: ConsumerT, min_idle_time: int, message_ids: Union[List[StreamIdT], Tuple[StreamIdT]], idle: Union[int, None]=None, time: Union[int, None]=None, retrycount: Union[int, None]=None, force: bool=False, justid: bool=False) -> ResponseT[Union[ArrayResponseT, ArrayResponseT]]:
+    def xclaim(self, name: KeyT, groupname: GroupT, consumername: ConsumerT, min_idle_time: int, message_ids: Union[List[StreamIdT], Tuple[StreamIdT]], idle: Union[int, None]=None, time: Union[int, None]=None, retrycount: Union[int, None]=None, force: bool=False, justid: bool=False) -> ResponseT[ArrayResponseT]:
         """
         Changes the ownership of a pending message.
 
@@ -3039,7 +3039,7 @@ class StreamCommands(CommandsProtocol):
         """
         return self.execute_command('XDEL', name, *ids)
 
-    def xgroup_create(self, name: KeyT, groupname: GroupT, id: StreamIdT='$', mkstream: bool=False, entries_read: Optional[int]=None) -> ResponseT[OKT]:
+    def xgroup_create(self, name: KeyT, groupname: GroupT, id: StreamIdT='$', mkstream: bool=False, entries_read: Optional[int]=None) -> TODO:
         """
         Create a new consumer group associated with a stream.
         name: name of the stream.
@@ -3124,7 +3124,7 @@ class StreamCommands(CommandsProtocol):
         """
         return self.execute_command('XINFO GROUPS', name)
 
-    def xinfo_stream(self, name: KeyT, full: bool=False) -> ResponseT[Union[ArrayResponseT, ArrayResponseT]]:
+    def xinfo_stream(self, name: KeyT, full: bool=False) -> ResponseT[ArrayResponseT]:
         """
         Returns general information about the stream.
         name: name of the stream.
@@ -3218,7 +3218,7 @@ class StreamCommands(CommandsProtocol):
             pieces.append(str(count))
         return self.execute_command('XRANGE', name, *pieces, keys=[name])
 
-    def xread(self, streams: Dict[KeyT, StreamIdT], count: Union[int, None]=None, block: Union[int, None]=None) -> ResponseT[Union[ArrayResponseT, NullResponseT]]:
+    def xread(self, streams: Dict[KeyT, StreamIdT], count: Union[int, None]=None, block: Union[int, None]=None) -> ResponseT[Union[NullResponseT, ArrayResponseT]]:
         """
         Block and monitor multiple streams for new data.
 
@@ -3251,7 +3251,7 @@ class StreamCommands(CommandsProtocol):
         pieces.extend(values)
         return self.execute_command('XREAD', *pieces, keys=keys)
 
-    def xreadgroup(self, groupname: str, consumername: str, streams: Dict[KeyT, StreamIdT], count: Union[int, None]=None, block: Union[int, None]=None, noack: bool=False) -> ResponseT[Union[ArrayResponseT, NullResponseT]]:
+    def xreadgroup(self, groupname: str, consumername: str, streams: Dict[KeyT, StreamIdT], count: Union[int, None]=None, block: Union[int, None]=None, noack: bool=False) -> ResponseT[Union[NullResponseT, ArrayResponseT]]:
         """
         Read from a stream via a consumer group.
 
@@ -3355,7 +3355,7 @@ class SortedSetCommands(CommandsProtocol):
     see: https://redis.io/topics/data-types-intro#redis-sorted-sets
     """
 
-    def zadd(self, name: KeyT, mapping: Mapping[AnyKeyT, EncodableT], nx: bool=False, xx: bool=False, ch: bool=False, incr: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[NullResponseT, IntegerResponseT, IntegerResponseT, BulkStringResponseT]]:
+    def zadd(self, name: KeyT, mapping: Mapping[AnyKeyT, EncodableT], nx: bool=False, xx: bool=False, ch: bool=False, incr: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[NullResponseT, BulkStringResponseT, IntegerResponseT]]:
         """
         Set any number of element-name, score pairs to the key ``name``. Pairs
         are specified as a dict of element-names keys to score values.
@@ -3466,7 +3466,7 @@ class SortedSetCommands(CommandsProtocol):
         """
         return self.execute_command('ZINCRBY', name, amount, value)
 
-    def zinter(self, keys: KeysT, aggregate: Union[str, None]=None, withscores: bool=False) -> ResponseT[list]:
+    def zinter(self, keys: KeysT, aggregate: Union[str, None]=None, withscores: bool=False) -> ResponseT:
         """
         Return the intersect of multiple sorted sets specified by ``keys``.
         With the ``aggregate`` option, it is possible to specify how the
@@ -3480,7 +3480,7 @@ class SortedSetCommands(CommandsProtocol):
         """
         return self._zaggregate('ZINTER', None, keys, aggregate, withscores=withscores)
 
-    def zinterstore(self, dest: KeyT, keys: Union[Sequence[KeyT], Mapping[AnyKeyT, float]], aggregate: Union[str, None]=None) -> ResponseT[int]:
+    def zinterstore(self, dest: KeyT, keys: Union[Sequence[KeyT], Mapping[AnyKeyT, float]], aggregate: Union[str, None]=None) -> ResponseT:
         """
         Intersect multiple sorted sets specified by ``keys`` into a new
         sorted set, ``dest``. Scores in the destination will be aggregated
@@ -3538,7 +3538,7 @@ class SortedSetCommands(CommandsProtocol):
         options = {'withscores': True}
         return self.execute_command('ZPOPMIN', name, *args, **options)
 
-    def zrandmember(self, key: KeyT, count: Optional[int]=None, withscores: bool=False) -> ResponseT[BulkStringResponseT]:
+    def zrandmember(self, key: KeyT, count: int=None, withscores: bool=False) -> ResponseT[BulkStringResponseT]:
         """
         Return a random element from the sorted set value stored at key.
 
@@ -3639,7 +3639,7 @@ class SortedSetCommands(CommandsProtocol):
         args.extend(['COUNT', count])
         return self.execute_command('BZMPOP', *args)
 
-    def _zrange(self, command, dest: Union[KeyT, None], name: KeyT, start: int, end: int, desc: bool=False, byscore: bool=False, bylex: bool=False, withscores: bool=False, score_cast_func: Union[type, Callable, None]=float, offset: Union[int, None]=None, num: Union[int, None]=None) -> ResponseT:
+    def _zrange(self, command, dest: Union[KeyT, None], name: KeyT, start: int, end: int, desc: bool=False, byscore: bool=False, bylex: bool=False, withscores: bool=False, score_cast_func: Union[type, Callable, None]=float, offset: Union[int, None]=None, num: Union[int, None]=None) -> TODO:
         if byscore and bylex:
             raise DataError('``byscore`` and ``bylex`` can not be specified together.')
         if offset is not None and num is None or (num is not None and offset is None):
@@ -3697,7 +3697,7 @@ class SortedSetCommands(CommandsProtocol):
             return self.zrevrange(name, start, end, withscores, score_cast_func)
         return self._zrange('ZRANGE', None, name, start, end, desc, byscore, bylex, withscores, score_cast_func, offset, num)
 
-    def zrevrange(self, name: KeyT, start: int, end: int, withscores: bool=False, score_cast_func: Union[type, Callable]=float) -> ResponseT:
+    def zrevrange(self, name: KeyT, start: int, end: int, withscores: bool=False, score_cast_func: Union[type, Callable]=float) -> TODO:
         """
         Return a range of values from sorted set ``name`` between
         ``start`` and ``end`` sorted in descending order.
@@ -3744,7 +3744,7 @@ class SortedSetCommands(CommandsProtocol):
         """
         return self._zrange('ZRANGESTORE', dest, name, start, end, desc, byscore, bylex, False, None, offset, num)
 
-    def zrangebylex(self, name: KeyT, min: EncodableT, max: EncodableT, start: Union[int, None]=None, num: Union[int, None]=None) -> ResponseT:
+    def zrangebylex(self, name: KeyT, min: EncodableT, max: EncodableT, start: Union[int, None]=None, num: Union[int, None]=None) -> TODO:
         """
         Return the lexicographical range of values from sorted set ``name``
         between ``min`` and ``max``.
@@ -3761,7 +3761,7 @@ class SortedSetCommands(CommandsProtocol):
             pieces.extend([b'LIMIT', start, num])
         return self.execute_command(*pieces, keys=[name])
 
-    def zrevrangebylex(self, name: KeyT, max: EncodableT, min: EncodableT, start: Union[int, None]=None, num: Union[int, None]=None) -> ResponseT:
+    def zrevrangebylex(self, name: KeyT, max: EncodableT, min: EncodableT, start: Union[int, None]=None, num: Union[int, None]=None) -> TODO:
         """
         Return the reversed lexicographical range of values from sorted set
         ``name`` between ``max`` and ``min``.
@@ -3778,7 +3778,7 @@ class SortedSetCommands(CommandsProtocol):
             pieces.extend(['LIMIT', start, num])
         return self.execute_command(*pieces, keys=[name])
 
-    def zrangebyscore(self, name: KeyT, min: ZScoreBoundT, max: ZScoreBoundT, start: Union[int, None]=None, num: Union[int, None]=None, withscores: bool=False, score_cast_func: Union[type, Callable]=float) -> ResponseT:
+    def zrangebyscore(self, name: KeyT, min: ZScoreBoundT, max: ZScoreBoundT, start: Union[int, None]=None, num: Union[int, None]=None, withscores: bool=False, score_cast_func: Union[type, Callable]=float) -> TODO:
         """
         Return a range of values from the sorted set ``name`` with scores
         between ``min`` and ``max``.
@@ -3804,7 +3804,7 @@ class SortedSetCommands(CommandsProtocol):
         options['keys'] = [name]
         return self.execute_command(*pieces, **options)
 
-    def zrevrangebyscore(self, name: KeyT, max: ZScoreBoundT, min: ZScoreBoundT, start: Union[int, None]=None, num: Union[int, None]=None, withscores: bool=False, score_cast_func: Union[type, Callable]=float):
+    def zrevrangebyscore(self, name: KeyT, max: ZScoreBoundT, min: ZScoreBoundT, start: Union[int, None]=None, num: Union[int, None]=None, withscores: bool=False, score_cast_func: Union[type, Callable]=float) -> TODO:
         """
         Return a range of values from the sorted set ``name`` with scores
         between ``min`` and ``max`` in descending order.
@@ -3895,7 +3895,7 @@ class SortedSetCommands(CommandsProtocol):
             return self.execute_command('ZREVRANK', name, value, 'WITHSCORE', keys=[name])
         return self.execute_command('ZREVRANK', name, value, keys=[name])
 
-    def zscore(self, name: KeyT, value: EncodableT) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def zscore(self, name: KeyT, value: EncodableT) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Return the score of element ``value`` in sorted set ``name``
 
@@ -3940,7 +3940,7 @@ class SortedSetCommands(CommandsProtocol):
         pieces = [key] + members
         return self.execute_command('ZMSCORE', *pieces, keys=[key])
 
-    def _zaggregate(self, command: str, dest: Union[KeyT, None], keys: Union[Sequence[KeyT], Mapping[AnyKeyT, float]], aggregate: Union[str, None]=None, **options) -> ResponseT:
+    def _zaggregate(self, command: str, dest: Union[KeyT, None], keys: Union[Sequence[KeyT], Mapping[AnyKeyT, float]], aggregate: Union[str, None]=None, **options) -> TODO:
         pieces: list[EncodableT] = [command]
         if dest is not None:
             pieces.append(dest)
@@ -3971,7 +3971,7 @@ class HyperlogCommands(CommandsProtocol):
     see: https://redis.io/topics/data-types-intro#hyperloglogs
     """
 
-    def pfadd(self, name: KeyT, *values: FieldT) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def pfadd(self, name: KeyT, *values: FieldT) -> ResponseT[IntegerResponseT]:
         """
         Adds the specified elements to the specified HyperLogLog.
 
@@ -4011,7 +4011,7 @@ class HashCommands(CommandsProtocol):
         """
         return self.execute_command('HDEL', name, *keys)
 
-    def hexists(self, name: str, key: str) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def hexists(self, name: str, key: str) -> ResponseT[IntegerResponseT]:
         """
         Returns a boolean indicating if ``key`` exists within hash ``name``
 
@@ -4019,7 +4019,7 @@ class HashCommands(CommandsProtocol):
         """
         return self.execute_command('HEXISTS', name, key, keys=[name])
 
-    def hget(self, name: str, key: str) -> ResponseT[Union[BulkStringResponseT, NullResponseT]]:
+    def hget(self, name: str, key: str) -> ResponseT[Union[NullResponseT, BulkStringResponseT]]:
         """
         Return the value of ``key`` within the hash ``name``
 
@@ -4090,7 +4090,7 @@ class HashCommands(CommandsProtocol):
                 pieces.extend(pair)
         return self.execute_command('HSET', name, *pieces)
 
-    def hsetnx(self, name: str, key: str, value: str) -> ResponseT[Union[IntegerResponseT, IntegerResponseT]]:
+    def hsetnx(self, name: str, key: str, value: str) -> ResponseT[IntegerResponseT]:
         """
         Set ``key`` to ``value`` within hash ``name`` if ``key`` does not
         exist.  Returns 1 if HSETNX created a field, otherwise 0.
@@ -4140,7 +4140,7 @@ class HashCommands(CommandsProtocol):
         """
         return self.execute_command('HSTRLEN', name, key, keys=[name])
 
-    def hexpire(self, name: KeyT, seconds: ExpiryT, *fields: str, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> TODO:
+    def hexpire(self, name: KeyT, seconds: ExpiryT, *fields: str, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Sets or updates the expiration time for fields within a hash key, using relative
         time in seconds.
@@ -4187,7 +4187,7 @@ class HashCommands(CommandsProtocol):
             options.append('LT')
         return self.execute_command('HEXPIRE', name, seconds, *options, 'FIELDS', len(fields), *fields)
 
-    def hpexpire(self, name: KeyT, milliseconds: ExpiryT, *fields: str, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> TODO:
+    def hpexpire(self, name: KeyT, milliseconds: ExpiryT, *fields: str, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Sets or updates the expiration time for fields within a hash key, using relative
         time in milliseconds.
@@ -4234,7 +4234,7 @@ class HashCommands(CommandsProtocol):
             options.append('LT')
         return self.execute_command('HPEXPIRE', name, milliseconds, *options, 'FIELDS', len(fields), *fields)
 
-    def hexpireat(self, name: KeyT, unix_time_seconds: AbsExpiryT, *fields: str, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> TODO:
+    def hexpireat(self, name: KeyT, unix_time_seconds: AbsExpiryT, *fields: str, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Sets or updates the expiration time for fields within a hash key, using an
         absolute Unix timestamp in seconds.
@@ -4281,7 +4281,7 @@ class HashCommands(CommandsProtocol):
             options.append('LT')
         return self.execute_command('HEXPIREAT', name, unix_time_seconds, *options, 'FIELDS', len(fields), *fields)
 
-    def hpexpireat(self, name: KeyT, unix_time_milliseconds: AbsExpiryT, *fields: str, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> TODO:
+    def hpexpireat(self, name: KeyT, unix_time_milliseconds: AbsExpiryT, *fields: str, nx: bool=False, xx: bool=False, gt: bool=False, lt: bool=False) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Sets or updates the expiration time for fields within a hash key, using an
         absolute Unix timestamp in milliseconds.
@@ -4328,7 +4328,7 @@ class HashCommands(CommandsProtocol):
             options.append('LT')
         return self.execute_command('HPEXPIREAT', name, unix_time_milliseconds, *options, 'FIELDS', len(fields), *fields)
 
-    def hpersist(self, name: KeyT, *fields: str) -> TODO:
+    def hpersist(self, name: KeyT, *fields: str) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Removes the expiration time for each specified field in a hash.
 
@@ -4348,7 +4348,7 @@ class HashCommands(CommandsProtocol):
         """
         return self.execute_command('HPERSIST', name, 'FIELDS', len(fields), *fields)
 
-    def hexpiretime(self, key: KeyT, *fields: str) -> TODO:
+    def hexpiretime(self, key: KeyT, *fields: str) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Returns the expiration times of hash fields as Unix timestamps in seconds.
 
@@ -4369,7 +4369,7 @@ class HashCommands(CommandsProtocol):
         """
         return self.execute_command('HEXPIRETIME', key, 'FIELDS', len(fields), *fields, keys=[key])
 
-    def hpexpiretime(self, key: KeyT, *fields: str) -> TODO:
+    def hpexpiretime(self, key: KeyT, *fields: str) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Returns the expiration times of hash fields as Unix timestamps in milliseconds.
 
@@ -4390,7 +4390,7 @@ class HashCommands(CommandsProtocol):
         """
         return self.execute_command('HPEXPIRETIME', key, 'FIELDS', len(fields), *fields, keys=[key])
 
-    def httl(self, key: KeyT, *fields: str) -> TODO:
+    def httl(self, key: KeyT, *fields: str) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Returns the TTL (Time To Live) in seconds for each specified field within a hash
         key.
@@ -4411,7 +4411,7 @@ class HashCommands(CommandsProtocol):
         """
         return self.execute_command('HTTL', key, 'FIELDS', len(fields), *fields, keys=[key])
 
-    def hpttl(self, key: KeyT, *fields: str) -> TODO:
+    def hpttl(self, key: KeyT, *fields: str) -> ResponseT[Union[IntegerResponseT, ArrayResponseT]]:
         """
         Returns the TTL (Time To Live) in milliseconds for each specified field within a
         hash key.
@@ -5076,7 +5076,7 @@ class ClusterCommands(CommandsProtocol):
         return self.execute_command('READONLY', **kwargs)
 AsyncClusterCommands = ClusterCommands
 
-class FunctionCommands(CommandsProtocol):
+class FunctionCommands:
     """
     Redis Function commands
     """

@@ -2,7 +2,6 @@
 
 import ast
 import sys
-from calendar import c
 from datetime import datetime, timedelta
 
 import bs4
@@ -51,7 +50,6 @@ KeysT = Union[KeyT, Iterable[KeyT]]
 OldResponseT = Union[Awaitable[Any], Any]  # Deprecated
 AnyResponseT = TypeVar("AnyResponseT", bound=Any)
 ResponseT = Union[AnyResponseT, Awaitable[AnyResponseT]]
-BinaryIntT = Union[Literal[0], Literal[1]]
 OKT = Literal["OK"]
 ArrayResponseT = list
 IntegerResponseT = int
@@ -95,6 +93,9 @@ ignore_function_names = [
     "__eq__",
     "__call__",
     "get_encoder",
+    "__contains__",
+    "_tf",
+    "tf",
 ]
 
 functions_changed = []
@@ -102,20 +103,28 @@ functions_not_changed = []
 no_exec_function_list = []
 no_return_function_list = []
 no_found_in_official_docs = []
+not_found_all_types = []
 
 
 def redis_string_to_type(redis_type_string: str):
-    if redis_type_string == "Array reply":
+    if redis_type_string.startswith("Array reply"):
         return "ArrayResponseT"
-    elif redis_type_string == "Integer reply":
-        return "IntegerResponseT"
-    elif redis_type_string == "Nil reply" or redis_type_string == "Null reply":
-        return "NullResponseT"
-    elif redis_type_string == "Bulk string reply":
-        return "BulkStringResponseT"
-    elif redis_type_string == "Simple string reply":
+    elif redis_type_string.startswith(
+        "Simple string reply: OK"
+    ) or redis_type_string.startswith("Simple string reply:OK"):
         return "OKT"
+    elif redis_type_string.startswith("Integer reply"):
+        return "IntegerResponseT"
+    elif redis_type_string.startswith("Nil reply") or redis_type_string.startswith(
+        "Null reply"
+    ):
+        return "NullResponseT"
+    elif redis_type_string.startswith("Bulk string reply"):
+        return "BulkStringResponseT"
+    elif redis_type_string.startswith("Simple string reply"):
+        return "str"
     print(f"Unknown type Do Not IGNORE {redis_type_string}")
+    not_found_all_types.append(redis_type_string)
     return "Ignore me"
 
 
@@ -170,7 +179,11 @@ def get_official_type_hints(function_name: str, execute_command: str):
         raise Exception(f"Cannot find {function_name} in official redis docs")
     soup = bs4.BeautifulSoup(response.text, "html.parser")
     returns_type_list = []
-    for reply_header_html_id in ["resp2resp3-reply", "resp2-reply"]:
+    for reply_header_html_id in [
+        "resp2resp3-reply",
+        "resp2resp3-replies",
+        "resp2-reply",
+    ]:
         reply_element_header = soup.find(None, {"id": reply_header_html_id})
         if not reply_element_header:
             if reply_header_html_id == "resp2-reply":
@@ -198,39 +211,31 @@ def get_official_type_hints(function_name: str, execute_command: str):
                     f"Couldn't find next UL element for Function: {function_name}"
                 )
             for li_element in next_ul_element.find_all("li"):
-                first_a_element = li_element.find("a")
-                if first_a_element:
-                    type_hint = redis_string_to_type(first_a_element.text)
-                    if type_hint == "Ignore me":
-                        continue
-                    returns_type_list.append(type_hint)
+                type_hint = redis_string_to_type(li_element.text)
+                returns_type_list.append(type_hint)
             return returns_type_list
 
         elif below_element.name == "p":
             has_a_inside = below_element.find("a")
             if has_a_inside:
                 type_hint = redis_string_to_type(has_a_inside.text)
-                if type_hint == "Ignore me":
-                    continue
                 return [type_hint]
 
         elif below_element.name == "a":
-            type_hint = redis_string_to_type(below_element.text)
-            if type_hint == "Ignore me":
-                continue
+            text = below_element.text
+            text_in_next_code = below_element.find_next("code")
+            if text_in_next_code:
+                text += f": {text_in_next_code.text}"
+            type_hint = redis_string_to_type(text)
             return [type_hint]
 
         next_ul_before_h_element = below_element.find_next("ul")
-        if next_ul_before_h_element:
-            if isinstance(next_ul_before_h_element, bs4.NavigableString):
-                continue
+        if next_ul_before_h_element and not isinstance(
+            next_ul_before_h_element, bs4.NavigableString
+        ):
             for li_element in next_ul_before_h_element.find_all("li"):
-                first_a_element = li_element.find("a")
-                if first_a_element:
-                    type_hint = redis_string_to_type(first_a_element.text)
-                    if type_hint == "Ignore me":
-                        continue
-                    returns_type_list.append(type_hint)
+                type_hint = redis_string_to_type(li_element.text)
+                returns_type_list.append(type_hint)
             return returns_type_list
 
         if below_element.text.find("Non-standard return value") > -1:
@@ -250,7 +255,11 @@ def get_return_types_from_file_without_exec(filename):
         tree = ast.parse(file.read(), filename=filename)
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
-            if node.name in ignore_function_names:
+            is_ignored = False
+            for ignore_function_name in ignore_function_names:
+                if node.name.startswith(ignore_function_name):
+                    is_ignored = True
+            if is_ignored:
                 continue
             all_return_statements = [
                 statement
@@ -280,8 +289,13 @@ def get_return_types_from_file_without_exec(filename):
                     )
                 execute_command = all_return_statements[0].value.args[0].value
                 if not isinstance(execute_command, str):
-                    no_exec_function_list.append(node.name)
-                    continue
+                    if execute_command.id == "args":
+                        execute_command = node.name
+                    else:
+                        no_exec_function_list.append(node.name)
+                        raise Exception(
+                            f"Function {node.name} has no execute_command return"
+                        )
                 print(
                     f"Function {node.name} is valid and only returns execute_command {execute_command}"
                 )
@@ -289,21 +303,33 @@ def get_return_types_from_file_without_exec(filename):
                     node.name, execute_command
                 )
                 if function_official_type:
+                    function_official_type = [
+                        type_hint
+                        for type_hint in function_official_type
+                        if type_hint != "Ignore me"
+                    ]
+                    if len(function_official_type) == 0:
+                        raise Exception(
+                            f"Function {node.name} has only Ignore me types"
+                        )
+                    function_official_type = list(set(function_official_type))
                     change_python_function_return_type(node, function_official_type)
                     functions_changed.append(node.name)
             except Exception as e:
                 print("ERROR")
                 print(e)
                 print("ERROR")
-                functions_not_changed.append(node.name)
+
+                functions_not_changed.append(f"Function error - {node.name} : {e}")
                 change_python_function_TODO_type(node)
-                # stop_all = input("stop all ? y/n: ")
-                # if stop_all == "y":
-                #     return
             print("\n")
     with open(filename, "w") as file:
         file.write(ast.unparse(tree))
     print(f"Changed {len(functions_changed)} functions")
+    print(f"Not Changed {len(functions_not_changed)} functions")
+    for not_changed in functions_not_changed:
+        with open("not_changed.txt", "a") as file:
+            file.write(f"{not_changed}\n")
     return None
 
 

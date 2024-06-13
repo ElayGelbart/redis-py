@@ -1,0 +1,43 @@
+Function error - acl_load : Couldn't find response HEADER for Function: acl_load in DOCS
+Function error - debug_object : Cannot find debug_object in official redis docs
+Function error - info : Function info has no return
+Function error - lolwut : Function lolwut has no return
+Function error - object : Couldn't find response HEADER for Function: object in DOCS
+Function error - shutdown : Function shutdown has no return
+Function error - reset : Function reset has no return
+Function error - overflow : 'Name' object has no attribute 'func'
+Function error - incrby : 'Name' object has no attribute 'func'
+Function error - get : 'Name' object has no attribute 'func'
+Function error - set : 'Name' object has no attribute 'func'
+Function error - command : 'Name' object has no attribute 'func'
+Function error - execute : Function execute has no execute_command return
+Function error - bitfield : 'Name' object has no attribute 'attr'
+Function error - bitfield_ro : Cannot find bitfield_ro in official redis docs
+Function error - __delitem__ : list index out of range
+Function error - __getitem__ : Function __getitem__ has no return
+Function error - __setitem__ : list index out of range
+Function error - stralgo : Cannot find stralgo in official redis docs
+Function error - watch : Function watch has no return
+Function error - unwatch : Function unwatch has no return
+Function error - lpop : Function lpop has no return
+Function error - rpop : Function rpop has no return
+Function error - scan_iter : Function scan_iter has no return
+Function error - sscan_iter : Function sscan_iter has no return
+Function error - hscan_iter : Function hscan_iter has no return
+Function error - zscan_iter : Function zscan_iter has no return
+Function error - xgroup_create : Function xgroup_create has no execute_command return
+Function error - _zrange : Function _zrange has no execute_command return
+Function error - zrevrange : Function zrevrange has no execute_command return
+Function error - zrangebylex : Function zrangebylex has no execute_command return
+Function error - zrevrangebylex : Function zrevrangebylex has no execute_command return
+Function error - zrangebyscore : Function zrangebyscore has no execute_command return
+Function error - zrevrangebyscore : Function zrevrangebyscore has no execute_command return
+Function error - _zaggregate : Function _zaggregate has no execute_command return
+Function error - _eval : 'Name' object has no attribute 'value'
+Function error - _evalsha : 'Name' object has no attribute 'value'
+Function error - register_script : 'Name' object has no attribute 'attr'
+Function error - register_script : 'Name' object has no attribute 'attr'
+Function error - _georadiusgeneric : 'Name' object has no attribute 'value'
+Function error - _geosearchgeneric : 'Name' object has no attribute 'value'
+Function error - cluster : 'JoinedStr' object has no attribute 'value'
+Function error - _fcall : 'Name' object has no attribute 'value'
