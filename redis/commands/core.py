@@ -14,7 +14,6 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
-    Set,
     Tuple,
     Union,
 )
@@ -70,7 +69,7 @@ class ACLCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/acl-cat
         """
-        pieces: list[EncodableT] = [category] if category else []
+        pieces: List[EncodableT] = [category] if category else []
         return self.execute_command("ACL CAT", *pieces, **kwargs)
 
     def acl_dryrun(
@@ -1450,7 +1449,7 @@ class BitFieldOperation:
         self.key = key
         self._default_overflow = default_overflow
         # for typing purposes, run the following in constructor and in reset()
-        self.operations: list[tuple[EncodableT, ...]] = []
+        self.operations: List[tuple[EncodableT, ...]] = []
         self._last_overflow = "WRAP"
         self.reset()
 
@@ -1602,7 +1601,7 @@ class BasicKeyCommands(CommandsProtocol):
         key: KeyT,
         encoding: str,
         offset: BitfieldOffsetT,
-        items: Optional[list] = None,
+        items: Optional[List] = None,
     ) -> ResponseT[ArrayResponseT]:
         """
         Return an array of the specified bitfield values
@@ -1861,7 +1860,7 @@ class BasicKeyCommands(CommandsProtocol):
                 "``ex``, ``px``, ``exat``, ``pxat``, "
                 "and ``persist`` are mutually exclusive."
             )
-        pieces: list[EncodableT] = []
+        pieces: List[EncodableT] = []
         # similar to set command
         if ex is not None:
             pieces.append("EX")
@@ -2285,7 +2284,7 @@ class BasicKeyCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/set
         """
-        pieces: list[EncodableT] = [name, value]
+        pieces: List[EncodableT] = [name, value]
         options = {}
         if ex is not None:
             pieces.append("EX")
@@ -2418,7 +2417,7 @@ class BasicKeyCommands(CommandsProtocol):
             raise DataError("specific_argument can be only keys or strings")
         if len and idx:
             raise DataError("len and idx cannot be provided together.")
-        pieces: list[EncodableT] = [algo, specific_argument.upper(), value1, value2]
+        pieces: List[EncodableT] = [algo, specific_argument.upper(), value1, value2]
         if len:
             pieces.append(b"LEN")
         if idx:
@@ -2847,7 +2846,7 @@ class ListCommands(CommandsProtocol):
 
          For more information see https://redis.io/commands/lpos
         """
-        pieces: list[EncodableT] = [name, value]
+        pieces: List[EncodableT] = [name, value]
         if rank is not None:
             pieces.extend(["RANK", rank])
         if count is not None:
@@ -2895,7 +2894,7 @@ class ListCommands(CommandsProtocol):
         """
         if (start is not None and num is None) or (num is not None and start is None):
             raise DataError("``start`` and ``num`` must both be specified")
-        pieces: list[EncodableT] = [name]
+        pieces: List[EncodableT] = [name]
         if by is not None:
             pieces.extend([b"BY", by])
         if start is not None and num is not None:
@@ -2994,7 +2993,7 @@ class ScanCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/scan
         """
-        pieces: list[EncodableT] = [cursor]
+        pieces: List[EncodableT] = [cursor]
         if match is not None:
             pieces.extend([b"MATCH", match])
         if count is not None:
@@ -3048,7 +3047,7 @@ class ScanCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/sscan
         """
-        pieces: list[EncodableT] = [name, cursor]
+        pieces: List[EncodableT] = [name, cursor]
         if match is not None:
             pieces.extend([b"MATCH", match])
         if count is not None:
@@ -3094,7 +3093,7 @@ class ScanCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/hscan
         """
-        pieces: list[EncodableT] = [name, cursor]
+        pieces: List[EncodableT] = [name, cursor]
         if match is not None:
             pieces.extend([b"MATCH", match])
         if count is not None:
@@ -3522,7 +3521,7 @@ class StreamCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/xadd
         """
-        pieces: list[EncodableT] = []
+        pieces: List[EncodableT] = []
         if maxlen is not None and minid is not None:
             raise DataError("Only one of ```maxlen``` or ```minid``` may be specified")
         if maxlen is not None:
@@ -3651,7 +3650,7 @@ class StreamCommands(CommandsProtocol):
                 "tuple of message IDs to claim"
             )
         kwargs = {}
-        pieces: list[EncodableT] = [name, groupname, consumername, str(min_idle_time)]
+        pieces: List[EncodableT] = [name, groupname, consumername, str(min_idle_time)]
         pieces.extend(list(message_ids))
         if idle is not None:
             if not isinstance(idle, int):
@@ -3702,7 +3701,7 @@ class StreamCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/xgroup-create
         """
-        pieces: list[EncodableT] = ["XGROUP CREATE", name, groupname, id]
+        pieces: List[EncodableT] = ["XGROUP CREATE", name, groupname, id]
         if mkstream:
             pieces.append(b"MKSTREAM")
         if entries_read is not None:
@@ -3978,7 +3977,7 @@ class StreamCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/xreadgroup
         """
-        pieces: list[EncodableT] = [b"GROUP", groupname, consumername]
+        pieces: List[EncodableT] = [b"GROUP", groupname, consumername]
         if count is not None:
             if not isinstance(count, int) or count < 1:
                 raise DataError("XREADGROUP count must be a positive integer")
@@ -4021,7 +4020,7 @@ class StreamCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/xrevrange
         """
-        pieces: list[EncodableT] = [max, min]
+        pieces: List[EncodableT] = [max, min]
         if count is not None:
             if not isinstance(count, int) or count < 1:
                 raise DataError("XREVRANGE count must be a positive integer")
@@ -4049,7 +4048,7 @@ class StreamCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/xtrim
         """
-        pieces: list[EncodableT] = []
+        pieces: List[EncodableT] = []
         if maxlen is not None and minid is not None:
             raise DataError("Only one of ``maxlen`` or ``minid`` may be specified")
         if maxlen is None and minid is None:
@@ -4136,7 +4135,7 @@ class SortedSetCommands(CommandsProtocol):
             )
         if nx and (gt or lt):
             raise DataError("Only one of 'nx', 'lt', or 'gr' may be defined.")
-        pieces: list[EncodableT] = []
+        pieces: List[EncodableT] = []
         options = {}
         if nx:
             pieces.append(b"NX")
@@ -4355,7 +4354,7 @@ class SortedSetCommands(CommandsProtocol):
         """
         if timeout is None:
             timeout = 0
-        keys: list[EncodableT] = list_or_args(keys, None)
+        keys: List[EncodableT] = list_or_args(keys, None)
         keys.append(timeout)
         return self.execute_command("BZPOPMIN", *keys)
 
@@ -4855,7 +4854,7 @@ class SortedSetCommands(CommandsProtocol):
         aggregate: Union[str, None] = None,
         **options,
     ) -> ResponseT[Any]:
-        pieces: list[EncodableT] = [command]
+        pieces: List[EncodableT] = [command]
         if dest is not None:
             pieces.append(dest)
         pieces.append(len(keys))
@@ -4997,7 +4996,7 @@ class HashCommands(CommandsProtocol):
         key: Optional[str] = None,
         value: Optional[str] = None,
         mapping: Optional[dict] = None,
-        items: Optional[list] = None,
+        items: Optional[List] = None,
     ) -> ResponseT[IntegerResponseT]:
         """
         Set ``key`` to ``value`` within hash ``name``,
@@ -5657,7 +5656,7 @@ class ScriptCommands(CommandsProtocol):
         return self._eval("EVAL_RO", script, numkeys, *keys_and_args)
 
     def _evalsha(
-        self, command: str, sha: str, numkeys: int, *keys_and_args: list
+        self, command: str, sha: str, numkeys: int, *keys_and_args: List
     ) -> ResponseT[Any]:
         return self.execute_command(command, sha, numkeys, *keys_and_args)
 
@@ -5827,7 +5826,7 @@ class GeoCommands(CommandsProtocol):
 
         For more information see https://redis.io/commands/geodist
         """
-        pieces: list[EncodableT] = [name, place1, place2]
+        pieces: List[EncodableT] = [name, place1, place2]
         if unit and unit not in ("m", "km", "mi", "ft"):
             raise DataError("GEODIST invalid unit")
         elif unit:
